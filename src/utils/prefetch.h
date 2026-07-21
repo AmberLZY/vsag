@@ -19,14 +19,19 @@
 #include "simd/simd.h"
 
 namespace vsag {
+__inline void __attribute__((__always_inline__)) rprfm_prefetch(const void* base_addr, size_t length) {
+    __asm__ __volatile__ (".inst 0xF8A348D8"::"r" (length), "r" (base_addr):"memory");
+}
+
 template <int N>
 __inline void __attribute__((__always_inline__)) PrefetchImpl(const void* data) {
-    if constexpr (N > 24) {
-        return PrefetchImpl<24>(data);
-    }
-    for (int i = 0; i < N; ++i) {
-        __builtin_prefetch(static_cast<const char*>(data) + i * 64, 0, 3);
-    }
+    rprfm_prefetch(data, N * 64);
+    // if constexpr (N > 24) {
+    //     return PrefetchImpl<24>(data);
+    // }
+    // for (int i = 0; i < N; ++i) {
+    //     __builtin_prefetch(static_cast<const char*>(data) + i * 64, 0, 3);
+    // }
 }
 
 void

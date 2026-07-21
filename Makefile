@@ -135,7 +135,7 @@ test_tsan_parallel: tsan ## Run unit tests parallel with ThreadSanitizer option.
 ## ================ distribution ================
 .PHONY: release
 release:                 ## Build vsag with release options.
-	cmake ${VSAG_CMAKE_ARGS} -B${RELEASE_BUILD_DIR} -DCMAKE_BUILD_TYPE=Release
+	cmake ${VSAG_CMAKE_ARGS} -B${RELEASE_BUILD_DIR} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-w" -DENABLE_ASAN=OFF -DENABLE_CCACHE=ON -DENABLE_TESTS=ON -DENABLE_MOCKIMPL=ON
 	cmake --build ${RELEASE_BUILD_DIR} --parallel ${COMPILE_JOBS}
 
 .PHONY: run-dist-tests
