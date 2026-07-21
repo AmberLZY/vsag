@@ -116,10 +116,10 @@ MemoryBlockIO::MultiReadImpl(uint8_t* datas,
 }
 void
 MemoryBlockIO::PrefetchImpl(uint64_t offset, uint64_t cache_line) {
-    const char* data = get_data_ptr(offset);
+    const void* data = get_data_ptr(offset);
     uint64_t n = std::min<uint64_t>(cache_line / 64, 63ULL);
     for (uint64_t i = 0; i < n; ++i) {
-        __builtin_prefetch(data + i * 64, 0, 3);
+        __builtin_prefetch(static_cast<const char*>(data) + i * 64, 0, 3);
     }
 }
 

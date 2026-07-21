@@ -62,9 +62,9 @@ MemoryIO::MultiReadImpl(uint8_t* datas, uint64_t* sizes, uint64_t* offsets, uint
 void
 MemoryIO::PrefetchImpl(uint64_t offset, uint64_t cache_line) {
     uint64_t n = std::min<uint64_t>(cache_line / 64, 63ULL);
-    const char* data = this->buffer_ + offset;
+    const void* data = this->buffer_ + offset;
     for (uint64_t i = 0; i < n; ++i) {
-        __builtin_prefetch(data + i * 64, 0, 3);
+        __builtin_prefetch(static_cast<const char*>(data) + i * 64, 0, 3);
     }
 }
 }  // namespace vsag
