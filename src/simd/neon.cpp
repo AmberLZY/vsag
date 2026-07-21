@@ -127,15 +127,112 @@ FP32ComputeIP(const float* query, const float* codes, uint64_t dim) {
 #endif
 }
 
+#pragma GCC push_options
+#pragma GCC optimize("unroll-loops,associative-math,no-signed-zeros")
 float
 FP32ComputeL2Sqr(const float* query, const float* codes, uint64_t dim) {
 #if defined(ENABLE_NEON)
-    return simd::ComputeL2SqrImpl<simd::SimdTraits<simd::NEON_Tag>>(
-        query, codes, dim, &generic::FP32ComputeL2Sqr);
+    // Based on FAISS KRL krl_L2sqr (L2distance_simd.c, Apache 2.0, Huawei Technologies)
+    // 4-accumulator NEON implementation: 16 floats/iter, prefetch, 4-way ILP hides FMA latency
+    constexpr size_t single_round = 4;
+    constexpr size_t multi_round = 16;
+    size_t i;
+    float res;
+
+    if (__builtin_expect(dim >= multi_round, 1)) {
+        // === hot path: dim >= 16 ===
+        __builtin_prefetch(query + multi_round, 0, 0);
+        __builtin_prefetch(codes + multi_round, 0, 0);
+
+        // prologue: load first 16 elements
+        float32x4_t q0 = vld1q_f32(query);
+        float32x4_t q1 = vld1q_f32(query + 4);
+        float32x4_t q2 = vld1q_f32(query + 8);
+        float32x4_t q3 = vld1q_f32(query + 12);
+
+        float32x4_t c0 = vld1q_f32(codes);
+        float32x4_t c1 = vld1q_f32(codes + 4);
+        float32x4_t c2 = vld1q_f32(codes + 8);
+        float32x4_t c3 = vld1q_f32(codes + 12);
+
+        float32x4_t d0 = vsubq_f32(q0, c0);
+        d0 = vmulq_f32(d0, d0);
+        float32x4_t d1 = vsubq_f32(q1, c1);
+        d1 = vmulq_f32(d1, d1);
+        float32x4_t d2 = vsubq_f32(q2, c2);
+        d2 = vmulq_f32(d2, d2);
+        float32x4_t d3 = vsubq_f32(q3, c3);
+        d3 = vmulq_f32(d3, d3);
+
+        // main loop: 4 independent accumulators, 16 elements/iter
+        for (i = multi_round; i <= dim - multi_round; i += multi_round) {
+            __builtin_prefetch(query + i + multi_round, 0, 0);
+            __builtin_prefetch(codes + i + multi_round, 0, 0);
+
+            q0 = vld1q_f32(query + i);
+            c0 = vld1q_f32(codes + i);
+            float32x4_t t0 = vsubq_f32(q0, c0);
+            d0 = vmlaq_f32(d0, t0, t0);
+
+            q1 = vld1q_f32(query + i + 4);
+            c1 = vld1q_f32(codes + i + 4);
+            float32x4_t t1 = vsubq_f32(q1, c1);
+            d1 = vmlaq_f32(d1, t1, t1);
+
+            q2 = vld1q_f32(query + i + 8);
+            c2 = vld1q_f32(codes + i + 8);
+            float32x4_t t2 = vsubq_f32(q2, c2);
+            d2 = vmlaq_f32(d2, t2, t2);
+
+            q3 = vld1q_f32(query + i + 12);
+            c3 = vld1q_f32(codes + i + 12);
+            float32x4_t t3 = vsubq_f32(q3, c3);
+            d3 = vmlaq_f32(d3, t3, t3);
+        }
+
+        // cleanup: single accumulator for remaining full vectors
+        for (; i <= dim - single_round; i += single_round) {
+            q0 = vld1q_f32(query + i);
+            c0 = vld1q_f32(codes + i);
+            float32x4_t t0 = vsubq_f32(q0, c0);
+            d0 = vmlaq_f32(d0, t0, t0);
+        }
+
+        // horizontal reduction: merge 4 accumulators → float
+        d0 = vaddq_f32(d0, d1);
+        d2 = vaddq_f32(d2, d3);
+        d0 = vaddq_f32(d0, d2);
+        res = vaddvq_f32(d0);
+    } else if (dim >= single_round) {
+        // === medium path: 4 <= dim < 16 ===
+        float32x4_t q0 = vld1q_f32(query);
+        float32x4_t c0 = vld1q_f32(codes);
+        float32x4_t d0 = vsubq_f32(q0, c0);
+        d0 = vmulq_f32(d0, d0);
+        for (i = single_round; i <= dim - single_round; i += single_round) {
+            q0 = vld1q_f32(query + i);
+            c0 = vld1q_f32(codes + i);
+            float32x4_t t0 = vsubq_f32(q0, c0);
+            d0 = vmlaq_f32(d0, t0, t0);
+        }
+        res = vaddvq_f32(d0);
+    } else {
+        // === small path: dim < 4 ===
+        res = 0.0f;
+        i = 0;
+    }
+
+    // scalar tail for unaligned remainder
+    for (; i < dim; i++) {
+        float t = query[i] - codes[i];
+        res += t * t;
+    }
+    return res;
 #else
     return vsag::generic::FP32ComputeL2Sqr(query, codes, dim);
 #endif
 }
+#pragma GCC pop_options
 
 void
 FP32SparseAccumulate(float* RESTRICT dists,
@@ -176,6 +273,8 @@ FP32ComputeIPBatch4(const float* RESTRICT query,
 #endif
 }
 
+#pragma GCC push_options
+#pragma GCC optimize("unroll-loops,associative-math,no-signed-zeros")
 void
 FP32ComputeL2SqrBatch4(const float* RESTRICT query,
                        uint64_t dim,
@@ -188,23 +287,84 @@ FP32ComputeL2SqrBatch4(const float* RESTRICT query,
                        float& result3,
                        float& result4) {
 #if defined(ENABLE_NEON)
-    simd::ComputeBatch4Impl<simd::SimdTraits<simd::NEON_Tag>, simd::Batch4Kind::L2>(
-        query,
-        dim,
-        codes1,
-        codes2,
-        codes3,
-        codes4,
-        result1,
-        result2,
-        result3,
-        result4,
-        &generic::FP32ComputeL2SqrBatch4);
+    // Based on FAISS KRL krl_L2sqr_idx_batch4 (L2distance_simd.c, Apache 2.0, Huawei Technologies)
+    // Query loaded once per iteration, reused across 4 code vectors
+    constexpr size_t single_round = 4;
+    size_t i;
+
+    if (__builtin_expect(dim >= single_round, 1)) {
+        // prologue: load query[0..3], compute diff^2 for 4 code vectors
+        float32x4_t q = vld1q_f32(query);
+
+        float32x4_t c0 = vld1q_f32(codes1);
+        c0 = vsubq_f32(c0, q);
+        float32x4_t c1 = vld1q_f32(codes2);
+        c1 = vsubq_f32(c1, q);
+        float32x4_t c2 = vld1q_f32(codes3);
+        c2 = vsubq_f32(c2, q);
+        float32x4_t c3 = vld1q_f32(codes4);
+        c3 = vsubq_f32(c3, q);
+
+        float32x4_t a0 = vmulq_f32(c0, c0);
+        float32x4_t a1 = vmulq_f32(c1, c1);
+        float32x4_t a2 = vmulq_f32(c2, c2);
+        float32x4_t a3 = vmulq_f32(c3, c3);
+
+        // main loop: reorder for ILP — keep AR registers busy between loads
+        for (i = single_round; i <= dim - single_round; i += single_round) {
+            q = vld1q_f32(query + i);
+
+            c0 = vld1q_f32(codes1 + i);
+            c0 = vsubq_f32(c0, q);
+            a0 = vmlaq_f32(a0, c0, c0);
+
+            c1 = vld1q_f32(codes2 + i);
+            c1 = vsubq_f32(c1, q);
+            a1 = vmlaq_f32(a1, c1, c1);
+
+            c2 = vld1q_f32(codes3 + i);
+            c2 = vsubq_f32(c2, q);
+            a2 = vmlaq_f32(a2, c2, c2);
+
+            c3 = vld1q_f32(codes4 + i);
+            c3 = vsubq_f32(c3, q);
+            a3 = vmlaq_f32(a3, c3, c3);
+        }
+
+        result1 += vaddvq_f32(a0);
+        result2 += vaddvq_f32(a1);
+        result3 += vaddvq_f32(a2);
+        result4 += vaddvq_f32(a3);
+    } else {
+        i = 0;
+    }
+
+    // scalar tail
+    if (dim > i) {
+        float q0 = query[i] - codes1[i], q1 = query[i] - codes2[i];
+        float q2 = query[i] - codes3[i], q3 = query[i] - codes4[i];
+        float d0 = q0 * q0, d1 = q1 * q1, d2 = q2 * q2, d3 = q3 * q3;
+        for (i++; i < dim; i++) {
+            float t0 = query[i] - codes1[i];
+            d0 += t0 * t0;
+            float t1 = query[i] - codes2[i];
+            d1 += t1 * t1;
+            float t2 = query[i] - codes3[i];
+            d2 += t2 * t2;
+            float t3 = query[i] - codes4[i];
+            d3 += t3 * t3;
+        }
+        result1 += d0;
+        result2 += d1;
+        result3 += d2;
+        result4 += d3;
+    }
 #else
     return generic::FP32ComputeL2SqrBatch4(
         query, dim, codes1, codes2, codes3, codes4, result1, result2, result3, result4);
 #endif
 }
+#pragma GCC pop_options
 
 void
 FP32Sub(const float* x, const float* y, float* z, uint64_t dim) {
