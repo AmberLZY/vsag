@@ -89,7 +89,7 @@ HGraph::HGraph(const HGraphParameterPtr& hgraph_param, const vsag::IndexCommonPa
 
     UnorderedMap<std::string, float> default_param(common_param.allocator_.get());
     default_param.insert(
-        {PREFETCH_DEPTH_CODE, 1.0});
+        {PREFETCH_DEPTH_CODE, (this->basic_flatten_codes_->code_size_ + 63.0) / 64.0});
     this->basic_flatten_codes_->SetRuntimeParameters(default_param);
 
     if (use_elp_optimizer_) {
