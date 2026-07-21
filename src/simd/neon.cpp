@@ -120,7 +120,7 @@ PQDistanceFloat256(const void* single_dim_centers, float single_dim_val, void* r
 float
 FP32ComputeIP(const float* query, const float* codes, uint64_t dim) {
 #if defined(ENABLE_NEON)
-    return simd::ComputeIPImpl<simd::SimdTraits<simd::NEON_Tag>>(
+    return simd::ComputeIPImpl<simd::SimdTraits<simd::NEON_Tag>, /*Unroll=*/4>(
         query, codes, dim, &generic::FP32ComputeIP);
 #else
     return generic::FP32ComputeIP(query, codes, dim);
@@ -130,7 +130,7 @@ FP32ComputeIP(const float* query, const float* codes, uint64_t dim) {
 float
 FP32ComputeL2Sqr(const float* query, const float* codes, uint64_t dim) {
 #if defined(ENABLE_NEON)
-    return simd::ComputeL2SqrImpl<simd::SimdTraits<simd::NEON_Tag>>(
+    return simd::ComputeL2SqrImpl<simd::SimdTraits<simd::NEON_Tag>, /*Unroll=*/4>(
         query, codes, dim, &generic::FP32ComputeL2Sqr);
 #else
     return vsag::generic::FP32ComputeL2Sqr(query, codes, dim);
