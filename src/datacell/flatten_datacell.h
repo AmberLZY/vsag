@@ -97,7 +97,7 @@ public:
 
     void
     Prefetch(InnerIdType id) override {
-        io_->Prefetch(id * code_size_, code_size_);
+        io_->Prefetch(id * code_size_, 64);
     };
 
     void
