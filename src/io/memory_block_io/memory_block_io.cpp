@@ -21,7 +21,6 @@
 #include "common.h"
 #include "index_common_param.h"
 #include "inner_string_params.h"
-#include "utils/prefetch.h"
 
 namespace vsag {
 
@@ -117,7 +116,11 @@ MemoryBlockIO::MultiReadImpl(uint8_t* datas,
 }
 void
 MemoryBlockIO::PrefetchImpl(uint64_t offset, uint64_t cache_line) {
-    PrefetchLines(get_data_ptr(offset), cache_line);
+    const void* data = get_data_ptr(offset);
+    uint64_t n = std::min<uint64_t>(cache_line / 64, 63ULL);
+    for (uint64_t i = 0; i < n; ++i) {
+        __builtin_prefetch(static_cast<const char*>(data) + i * 64, 0, 3);
+    }
 }
 
 void

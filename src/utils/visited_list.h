@@ -57,7 +57,7 @@ public:
     void
     Prefetch(const InnerIdType& id) {
         const auto word_id = static_cast<uint64_t>(id) / kBitsPerWord;
-        PrefetchLines(this->tags_ + word_id, 64);
+        __builtin_prefetch(this->tags_ + word_id, 0, 3);
     }
 
     void
