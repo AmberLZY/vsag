@@ -87,6 +87,60 @@ public:
                     float* dists) const;
 
     void
+    ComputeDistsBatch8Impl(Computer<TransformQuantizer<QuantTmpl, metric>>& computer,
+                           const uint8_t* codes1,
+                           const uint8_t* codes2,
+                           const uint8_t* codes3,
+                           const uint8_t* codes4,
+                           const uint8_t* codes5,
+                           const uint8_t* codes6,
+                           const uint8_t* codes7,
+                           const uint8_t* codes8,
+                           float& dists1,
+                           float& dists2,
+                           float& dists3,
+                           float& dists4,
+                           float& dists5,
+                           float& dists6,
+                           float& dists7,
+                           float& dists8) const;
+
+    void
+    ComputeDistsBatch16Impl(Computer<TransformQuantizer<QuantTmpl, metric>>& computer,
+                            const uint8_t* codes1,
+                            const uint8_t* codes2,
+                            const uint8_t* codes3,
+                            const uint8_t* codes4,
+                            const uint8_t* codes5,
+                            const uint8_t* codes6,
+                            const uint8_t* codes7,
+                            const uint8_t* codes8,
+                            const uint8_t* codes9,
+                            const uint8_t* codes10,
+                            const uint8_t* codes11,
+                            const uint8_t* codes12,
+                            const uint8_t* codes13,
+                            const uint8_t* codes14,
+                            const uint8_t* codes15,
+                            const uint8_t* codes16,
+                            float& dists1,
+                            float& dists2,
+                            float& dists3,
+                            float& dists4,
+                            float& dists5,
+                            float& dists6,
+                            float& dists7,
+                            float& dists8,
+                            float& dists9,
+                            float& dists10,
+                            float& dists11,
+                            float& dists12,
+                            float& dists13,
+                            float& dists14,
+                            float& dists15,
+                            float& dists16) const;
+
+    void
     ScanBatchDistImpl(Computer<TransformQuantizer<QuantTmpl, metric>>& computer,
                       uint64_t count,
                       const uint8_t* codes,
@@ -338,6 +392,176 @@ TransformQuantizer<QuantTmpl, metric>::ComputeDistImpl(Computer<TransformQuantiz
     dists[0] =
         ExecuteChainDistanceRecovery(quantize_dist, meta_offset_1, meta_offset_2, codes_1, codes_2);
 };
+
+template <typename QuantTmpl, MetricType metric>
+void
+TransformQuantizer<QuantTmpl, metric>::ComputeDistsBatch8Impl(
+    Computer<TransformQuantizer<QuantTmpl, metric>>& computer,
+    const uint8_t* codes1,
+    const uint8_t* codes2,
+    const uint8_t* codes3,
+    const uint8_t* codes4,
+    const uint8_t* codes5,
+    const uint8_t* codes6,
+    const uint8_t* codes7,
+    const uint8_t* codes8,
+    float& dists1,
+    float& dists2,
+    float& dists3,
+    float& dists4,
+    float& dists5,
+    float& dists6,
+    float& dists7,
+    float& dists8) const {
+    const auto* meta_offset_1 = query_meta_offsets_.data();
+    const auto* meta_offset_2 = base_meta_offsets_.data();
+    const auto* codes_q = computer.inner_computer_->buf_;
+
+    float qdists[8];
+    quantizer_->ComputeDistsBatch8(*computer.inner_computer_,
+                                    codes1,
+                                    codes2,
+                                    codes3,
+                                    codes4,
+                                    codes5,
+                                    codes6,
+                                    codes7,
+                                    codes8,
+                                    qdists[0],
+                                    qdists[1],
+                                    qdists[2],
+                                    qdists[3],
+                                    qdists[4],
+                                    qdists[5],
+                                    qdists[6],
+                                    qdists[7]);
+
+    dists1 =
+        ExecuteChainDistanceRecovery(qdists[0], meta_offset_1, meta_offset_2, codes_q, codes1);
+    dists2 =
+        ExecuteChainDistanceRecovery(qdists[1], meta_offset_1, meta_offset_2, codes_q, codes2);
+    dists3 =
+        ExecuteChainDistanceRecovery(qdists[2], meta_offset_1, meta_offset_2, codes_q, codes3);
+    dists4 =
+        ExecuteChainDistanceRecovery(qdists[3], meta_offset_1, meta_offset_2, codes_q, codes4);
+    dists5 =
+        ExecuteChainDistanceRecovery(qdists[4], meta_offset_1, meta_offset_2, codes_q, codes5);
+    dists6 =
+        ExecuteChainDistanceRecovery(qdists[5], meta_offset_1, meta_offset_2, codes_q, codes6);
+    dists7 =
+        ExecuteChainDistanceRecovery(qdists[6], meta_offset_1, meta_offset_2, codes_q, codes7);
+    dists8 =
+        ExecuteChainDistanceRecovery(qdists[7], meta_offset_1, meta_offset_2, codes_q, codes8);
+}
+
+template <typename QuantTmpl, MetricType metric>
+void
+TransformQuantizer<QuantTmpl, metric>::ComputeDistsBatch16Impl(
+    Computer<TransformQuantizer<QuantTmpl, metric>>& computer,
+    const uint8_t* codes1,
+    const uint8_t* codes2,
+    const uint8_t* codes3,
+    const uint8_t* codes4,
+    const uint8_t* codes5,
+    const uint8_t* codes6,
+    const uint8_t* codes7,
+    const uint8_t* codes8,
+    const uint8_t* codes9,
+    const uint8_t* codes10,
+    const uint8_t* codes11,
+    const uint8_t* codes12,
+    const uint8_t* codes13,
+    const uint8_t* codes14,
+    const uint8_t* codes15,
+    const uint8_t* codes16,
+    float& dists1,
+    float& dists2,
+    float& dists3,
+    float& dists4,
+    float& dists5,
+    float& dists6,
+    float& dists7,
+    float& dists8,
+    float& dists9,
+    float& dists10,
+    float& dists11,
+    float& dists12,
+    float& dists13,
+    float& dists14,
+    float& dists15,
+    float& dists16) const {
+    const auto* meta_offset_1 = query_meta_offsets_.data();
+    const auto* meta_offset_2 = base_meta_offsets_.data();
+    const auto* codes_q = computer.inner_computer_->buf_;
+
+    float qdists[16];
+    quantizer_->ComputeDistsBatch16(*computer.inner_computer_,
+                                    codes1,
+                                    codes2,
+                                    codes3,
+                                    codes4,
+                                    codes5,
+                                    codes6,
+                                    codes7,
+                                    codes8,
+                                    codes9,
+                                    codes10,
+                                    codes11,
+                                    codes12,
+                                    codes13,
+                                    codes14,
+                                    codes15,
+                                    codes16,
+                                    qdists[0],
+                                    qdists[1],
+                                    qdists[2],
+                                    qdists[3],
+                                    qdists[4],
+                                    qdists[5],
+                                    qdists[6],
+                                    qdists[7],
+                                    qdists[8],
+                                    qdists[9],
+                                    qdists[10],
+                                    qdists[11],
+                                    qdists[12],
+                                    qdists[13],
+                                    qdists[14],
+                                    qdists[15]);
+
+    dists1 =
+        ExecuteChainDistanceRecovery(qdists[0], meta_offset_1, meta_offset_2, codes_q, codes1);
+    dists2 =
+        ExecuteChainDistanceRecovery(qdists[1], meta_offset_1, meta_offset_2, codes_q, codes2);
+    dists3 =
+        ExecuteChainDistanceRecovery(qdists[2], meta_offset_1, meta_offset_2, codes_q, codes3);
+    dists4 =
+        ExecuteChainDistanceRecovery(qdists[3], meta_offset_1, meta_offset_2, codes_q, codes4);
+    dists5 =
+        ExecuteChainDistanceRecovery(qdists[4], meta_offset_1, meta_offset_2, codes_q, codes5);
+    dists6 =
+        ExecuteChainDistanceRecovery(qdists[5], meta_offset_1, meta_offset_2, codes_q, codes6);
+    dists7 =
+        ExecuteChainDistanceRecovery(qdists[6], meta_offset_1, meta_offset_2, codes_q, codes7);
+    dists8 =
+        ExecuteChainDistanceRecovery(qdists[7], meta_offset_1, meta_offset_2, codes_q, codes8);
+    dists9 =
+        ExecuteChainDistanceRecovery(qdists[8], meta_offset_1, meta_offset_2, codes_q, codes9);
+    dists10 =
+        ExecuteChainDistanceRecovery(qdists[9], meta_offset_1, meta_offset_2, codes_q, codes10);
+    dists11 =
+        ExecuteChainDistanceRecovery(qdists[10], meta_offset_1, meta_offset_2, codes_q, codes11);
+    dists12 =
+        ExecuteChainDistanceRecovery(qdists[11], meta_offset_1, meta_offset_2, codes_q, codes12);
+    dists13 =
+        ExecuteChainDistanceRecovery(qdists[12], meta_offset_1, meta_offset_2, codes_q, codes13);
+    dists14 =
+        ExecuteChainDistanceRecovery(qdists[13], meta_offset_1, meta_offset_2, codes_q, codes14);
+    dists15 =
+        ExecuteChainDistanceRecovery(qdists[14], meta_offset_1, meta_offset_2, codes_q, codes15);
+    dists16 =
+        ExecuteChainDistanceRecovery(qdists[15], meta_offset_1, meta_offset_2, codes_q, codes16);
+}
 
 template <typename QuantTmpl, MetricType metric>
 float

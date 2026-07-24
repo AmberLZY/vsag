@@ -27,6 +27,7 @@
 #include "io/common/basic_io.h"
 #include "io/memory_block_io/memory_block_io.h"
 #include "quantization/quantizer.h"
+#include "simd/fp32_simd.h"
 #include "query_context.h"
 #include "utils/byte_buffer.h"
 #include "utils/timer.h"
@@ -358,6 +359,204 @@ FlattenDataCell<QuantTmpl, IOTmpl>::query(float* result_dists,
 
     memset(result_dists, 0, sizeof(float) * id_count);
     int64_t i = 0;
+    for (; i + 15 < id_count; i += 16) {
+        for (int64_t j = 0; j < 16; ++j) {
+            if (i + j + this->prefetch_stride_code_ < id_count) {
+                this->io_->Prefetch(
+                    static_cast<uint64_t>(idx[i + j + this->prefetch_stride_code_]) *
+                        static_cast<uint64_t>(code_size_),
+                    this->prefetch_depth_code_ * 64);
+            }
+        }
+        bool release1 = false, release2 = false, release3 = false, release4 = false;
+        bool release5 = false, release6 = false, release7 = false, release8 = false;
+        bool release9 = false, release10 = false, release11 = false, release12 = false;
+        bool release13 = false, release14 = false, release15 = false, release16 = false;
+        const uint8_t *codes1 = nullptr, *codes2 = nullptr, *codes3 = nullptr, *codes4 = nullptr;
+        const uint8_t *codes5 = nullptr, *codes6 = nullptr, *codes7 = nullptr, *codes8 = nullptr;
+        const uint8_t *codes9 = nullptr, *codes10 = nullptr, *codes11 = nullptr, *codes12 = nullptr;
+        const uint8_t *codes13 = nullptr, *codes14 = nullptr, *codes15 = nullptr, *codes16 = nullptr;
+        auto release_batch = [&]() {
+            if (release1 && codes1) this->io_->Release(codes1);
+            if (release2 && codes2) this->io_->Release(codes2);
+            if (release3 && codes3) this->io_->Release(codes3);
+            if (release4 && codes4) this->io_->Release(codes4);
+            if (release5 && codes5) this->io_->Release(codes5);
+            if (release6 && codes6) this->io_->Release(codes6);
+            if (release7 && codes7) this->io_->Release(codes7);
+            if (release8 && codes8) this->io_->Release(codes8);
+            if (release9 && codes9) this->io_->Release(codes9);
+            if (release10 && codes10) this->io_->Release(codes10);
+            if (release11 && codes11) this->io_->Release(codes11);
+            if (release12 && codes12) this->io_->Release(codes12);
+            if (release13 && codes13) this->io_->Release(codes13);
+            if (release14 && codes14) this->io_->Release(codes14);
+            if (release15 && codes15) this->io_->Release(codes15);
+            if (release16 && codes16) this->io_->Release(codes16);
+        };
+        try {
+            codes1 = this->GetCodesById(idx[i], release1);
+            codes2 = this->GetCodesById(idx[i + 1], release2);
+            codes3 = this->GetCodesById(idx[i + 2], release3);
+            codes4 = this->GetCodesById(idx[i + 3], release4);
+            codes5 = this->GetCodesById(idx[i + 4], release5);
+            codes6 = this->GetCodesById(idx[i + 5], release6);
+            codes7 = this->GetCodesById(idx[i + 6], release7);
+            codes8 = this->GetCodesById(idx[i + 7], release8);
+            codes9 = this->GetCodesById(idx[i + 8], release9);
+            codes10 = this->GetCodesById(idx[i + 9], release10);
+            codes11 = this->GetCodesById(idx[i + 10], release11);
+            codes12 = this->GetCodesById(idx[i + 11], release12);
+            codes13 = this->GetCodesById(idx[i + 12], release13);
+            codes14 = this->GetCodesById(idx[i + 13], release14);
+            codes15 = this->GetCodesById(idx[i + 14], release15);
+            codes16 = this->GetCodesById(idx[i + 15], release16);
+            {
+                const auto* query_data = reinterpret_cast<const float*>(computer->buf_);
+                uint64_t dim = this->quantizer_->GetDim();
+                const auto* fcodes1 = reinterpret_cast<const float*>(codes1);
+                const auto* fcodes2 = reinterpret_cast<const float*>(codes2);
+                const auto* fcodes3 = reinterpret_cast<const float*>(codes3);
+                const auto* fcodes4 = reinterpret_cast<const float*>(codes4);
+                const auto* fcodes5 = reinterpret_cast<const float*>(codes5);
+                const auto* fcodes6 = reinterpret_cast<const float*>(codes6);
+                const auto* fcodes7 = reinterpret_cast<const float*>(codes7);
+                const auto* fcodes8 = reinterpret_cast<const float*>(codes8);
+                const auto* fcodes9 = reinterpret_cast<const float*>(codes9);
+                const auto* fcodes10 = reinterpret_cast<const float*>(codes10);
+                const auto* fcodes11 = reinterpret_cast<const float*>(codes11);
+                const auto* fcodes12 = reinterpret_cast<const float*>(codes12);
+                const auto* fcodes13 = reinterpret_cast<const float*>(codes13);
+                const auto* fcodes14 = reinterpret_cast<const float*>(codes14);
+                const auto* fcodes15 = reinterpret_cast<const float*>(codes15);
+                const auto* fcodes16 = reinterpret_cast<const float*>(codes16);
+                if (this->quantizer_->Metric() == MetricType::METRIC_TYPE_L2SQR) {
+                    FP32ComputeL2SqrBatch16(query_data, dim,
+                                            fcodes1, fcodes2, fcodes3, fcodes4,
+                                            fcodes5, fcodes6, fcodes7, fcodes8,
+                                            fcodes9, fcodes10, fcodes11, fcodes12,
+                                            fcodes13, fcodes14, fcodes15, fcodes16,
+                                            result_dists[i], result_dists[i + 1],
+                                            result_dists[i + 2], result_dists[i + 3],
+                                            result_dists[i + 4], result_dists[i + 5],
+                                            result_dists[i + 6], result_dists[i + 7],
+                                            result_dists[i + 8], result_dists[i + 9],
+                                            result_dists[i + 10], result_dists[i + 11],
+                                            result_dists[i + 12], result_dists[i + 13],
+                                            result_dists[i + 14], result_dists[i + 15]);
+                } else {
+                    FP32ComputeIPBatch16(query_data, dim,
+                                         fcodes1, fcodes2, fcodes3, fcodes4,
+                                         fcodes5, fcodes6, fcodes7, fcodes8,
+                                         fcodes9, fcodes10, fcodes11, fcodes12,
+                                         fcodes13, fcodes14, fcodes15, fcodes16,
+                                         result_dists[i], result_dists[i + 1],
+                                         result_dists[i + 2], result_dists[i + 3],
+                                         result_dists[i + 4], result_dists[i + 5],
+                                         result_dists[i + 6], result_dists[i + 7],
+                                         result_dists[i + 8], result_dists[i + 9],
+                                         result_dists[i + 10], result_dists[i + 11],
+                                         result_dists[i + 12], result_dists[i + 13],
+                                         result_dists[i + 14], result_dists[i + 15]);
+                    result_dists[i] = 1.0F - result_dists[i];
+                    result_dists[i + 1] = 1.0F - result_dists[i + 1];
+                    result_dists[i + 2] = 1.0F - result_dists[i + 2];
+                    result_dists[i + 3] = 1.0F - result_dists[i + 3];
+                    result_dists[i + 4] = 1.0F - result_dists[i + 4];
+                    result_dists[i + 5] = 1.0F - result_dists[i + 5];
+                    result_dists[i + 6] = 1.0F - result_dists[i + 6];
+                    result_dists[i + 7] = 1.0F - result_dists[i + 7];
+                    result_dists[i + 8] = 1.0F - result_dists[i + 8];
+                    result_dists[i + 9] = 1.0F - result_dists[i + 9];
+                    result_dists[i + 10] = 1.0F - result_dists[i + 10];
+                    result_dists[i + 11] = 1.0F - result_dists[i + 11];
+                    result_dists[i + 12] = 1.0F - result_dists[i + 12];
+                    result_dists[i + 13] = 1.0F - result_dists[i + 13];
+                    result_dists[i + 14] = 1.0F - result_dists[i + 14];
+                    result_dists[i + 15] = 1.0F - result_dists[i + 15];
+                }
+            }
+        } catch (...) {
+            release_batch();
+            throw;
+        }
+        release_batch();
+    }
+    for (; i + 7 < id_count; i += 8) {
+        for (int64_t j = 0; j < 8; ++j) {
+            if (i + j + this->prefetch_stride_code_ < id_count) {
+                this->io_->Prefetch(
+                    static_cast<uint64_t>(idx[i + j + this->prefetch_stride_code_]) *
+                        static_cast<uint64_t>(code_size_),
+                    this->prefetch_depth_code_ * 64);
+            }
+        }
+        bool release1 = false, release2 = false, release3 = false, release4 = false;
+        bool release5 = false, release6 = false, release7 = false, release8 = false;
+        const uint8_t *codes1 = nullptr, *codes2 = nullptr, *codes3 = nullptr, *codes4 = nullptr;
+        const uint8_t *codes5 = nullptr, *codes6 = nullptr, *codes7 = nullptr, *codes8 = nullptr;
+        auto release_batch = [&]() {
+            if (release1 && codes1) this->io_->Release(codes1);
+            if (release2 && codes2) this->io_->Release(codes2);
+            if (release3 && codes3) this->io_->Release(codes3);
+            if (release4 && codes4) this->io_->Release(codes4);
+            if (release5 && codes5) this->io_->Release(codes5);
+            if (release6 && codes6) this->io_->Release(codes6);
+            if (release7 && codes7) this->io_->Release(codes7);
+            if (release8 && codes8) this->io_->Release(codes8);
+        };
+        try {
+            codes1 = this->GetCodesById(idx[i], release1);
+            codes2 = this->GetCodesById(idx[i + 1], release2);
+            codes3 = this->GetCodesById(idx[i + 2], release3);
+            codes4 = this->GetCodesById(idx[i + 3], release4);
+            codes5 = this->GetCodesById(idx[i + 4], release5);
+            codes6 = this->GetCodesById(idx[i + 5], release6);
+            codes7 = this->GetCodesById(idx[i + 6], release7);
+            codes8 = this->GetCodesById(idx[i + 7], release8);
+            {
+                const auto* query_data = reinterpret_cast<const float*>(computer->buf_);
+                uint64_t dim = this->quantizer_->GetDim();
+                const auto* fcodes1 = reinterpret_cast<const float*>(codes1);
+                const auto* fcodes2 = reinterpret_cast<const float*>(codes2);
+                const auto* fcodes3 = reinterpret_cast<const float*>(codes3);
+                const auto* fcodes4 = reinterpret_cast<const float*>(codes4);
+                const auto* fcodes5 = reinterpret_cast<const float*>(codes5);
+                const auto* fcodes6 = reinterpret_cast<const float*>(codes6);
+                const auto* fcodes7 = reinterpret_cast<const float*>(codes7);
+                const auto* fcodes8 = reinterpret_cast<const float*>(codes8);
+                if (this->quantizer_->Metric() == MetricType::METRIC_TYPE_L2SQR) {
+                    FP32ComputeL2SqrBatch8(query_data, dim,
+                                           fcodes1, fcodes2, fcodes3, fcodes4,
+                                           fcodes5, fcodes6, fcodes7, fcodes8,
+                                           result_dists[i], result_dists[i + 1],
+                                           result_dists[i + 2], result_dists[i + 3],
+                                           result_dists[i + 4], result_dists[i + 5],
+                                           result_dists[i + 6], result_dists[i + 7]);
+                } else {
+                    FP32ComputeIPBatch8(query_data, dim,
+                                        fcodes1, fcodes2, fcodes3, fcodes4,
+                                        fcodes5, fcodes6, fcodes7, fcodes8,
+                                        result_dists[i], result_dists[i + 1],
+                                        result_dists[i + 2], result_dists[i + 3],
+                                        result_dists[i + 4], result_dists[i + 5],
+                                        result_dists[i + 6], result_dists[i + 7]);
+                    result_dists[i] = 1.0F - result_dists[i];
+                    result_dists[i + 1] = 1.0F - result_dists[i + 1];
+                    result_dists[i + 2] = 1.0F - result_dists[i + 2];
+                    result_dists[i + 3] = 1.0F - result_dists[i + 3];
+                    result_dists[i + 4] = 1.0F - result_dists[i + 4];
+                    result_dists[i + 5] = 1.0F - result_dists[i + 5];
+                    result_dists[i + 6] = 1.0F - result_dists[i + 6];
+                    result_dists[i + 7] = 1.0F - result_dists[i + 7];
+                }
+            }
+        } catch (...) {
+            release_batch();
+            throw;
+        }
+        release_batch();
+    }
     for (; i + 3 < id_count; i += 4) {
         for (int64_t j = 0; j < 4; ++j) {
             if (i + j + this->prefetch_stride_code_ < id_count) {

@@ -147,6 +147,188 @@ FP32ComputeL2SqrBatch4(const float* RESTRICT query,
 }
 
 void
+FP32ComputeIPBatch8(const float* RESTRICT query,
+                    uint64_t dim,
+                    const float* RESTRICT c1,
+                    const float* RESTRICT c2,
+                    const float* RESTRICT c3,
+                    const float* RESTRICT c4,
+                    const float* RESTRICT c5,
+                    const float* RESTRICT c6,
+                    const float* RESTRICT c7,
+                    const float* RESTRICT c8,
+                    float& r1,
+                    float& r2,
+                    float& r3,
+                    float& r4,
+                    float& r5,
+                    float& r6,
+                    float& r7,
+                    float& r8) {
+    float s1 = 0, s2 = 0, s3 = 0, s4 = 0, s5 = 0, s6 = 0, s7 = 0, s8 = 0;
+    for (uint64_t d = 0; d < dim; d++) {
+        float q = query[d];
+        s1 += q * c1[d]; s2 += q * c2[d]; s3 += q * c3[d]; s4 += q * c4[d];
+        s5 += q * c5[d]; s6 += q * c6[d]; s7 += q * c7[d]; s8 += q * c8[d];
+    }
+    r1 = s1; r2 = s2; r3 = s3; r4 = s4; r5 = s5; r6 = s6; r7 = s7; r8 = s8;
+}
+
+void
+FP32ComputeL2SqrBatch8(const float* RESTRICT query,
+                       uint64_t dim,
+                       const float* RESTRICT c1,
+                       const float* RESTRICT c2,
+                       const float* RESTRICT c3,
+                       const float* RESTRICT c4,
+                       const float* RESTRICT c5,
+                       const float* RESTRICT c6,
+                       const float* RESTRICT c7,
+                       const float* RESTRICT c8,
+                       float& r1,
+                       float& r2,
+                       float& r3,
+                       float& r4,
+                       float& r5,
+                       float& r6,
+                       float& r7,
+                       float& r8) {
+    float s1 = 0, s2 = 0, s3 = 0, s4 = 0, s5 = 0, s6 = 0, s7 = 0, s8 = 0;
+    for (uint64_t d = 0; d < dim; d++) {
+        float q = query[d];
+        float d1 = q - c1[d]; s1 += d1 * d1;
+        float d2 = q - c2[d]; s2 += d2 * d2;
+        float d3 = q - c3[d]; s3 += d3 * d3;
+        float d4 = q - c4[d]; s4 += d4 * d4;
+        float d5 = q - c5[d]; s5 += d5 * d5;
+        float d6 = q - c6[d]; s6 += d6 * d6;
+        float d7 = q - c7[d]; s7 += d7 * d7;
+        float d8 = q - c8[d]; s8 += d8 * d8;
+    }
+    r1 = s1; r2 = s2; r3 = s3; r4 = s4; r5 = s5; r6 = s6; r7 = s7; r8 = s8;
+}
+
+void
+FP32ComputeIPBatch16(const float* RESTRICT query,
+                     uint64_t dim,
+                     const float* RESTRICT c1,
+                     const float* RESTRICT c2,
+                     const float* RESTRICT c3,
+                     const float* RESTRICT c4,
+                     const float* RESTRICT c5,
+                     const float* RESTRICT c6,
+                     const float* RESTRICT c7,
+                     const float* RESTRICT c8,
+                     const float* RESTRICT c9,
+                     const float* RESTRICT c10,
+                     const float* RESTRICT c11,
+                     const float* RESTRICT c12,
+                     const float* RESTRICT c13,
+                     const float* RESTRICT c14,
+                     const float* RESTRICT c15,
+                     const float* RESTRICT c16,
+                     float& r1,
+                     float& r2,
+                     float& r3,
+                     float& r4,
+                     float& r5,
+                     float& r6,
+                     float& r7,
+                     float& r8,
+                     float& r9,
+                     float& r10,
+                     float& r11,
+                     float& r12,
+                     float& r13,
+                     float& r14,
+                     float& r15,
+                     float& r16) {
+    float s1 = 0, s2 = 0, s3 = 0, s4 = 0, s5 = 0, s6 = 0, s7 = 0, s8 = 0;
+    float s9 = 0, s10 = 0, s11 = 0, s12 = 0, s13 = 0, s14 = 0, s15 = 0, s16 = 0;
+    for (uint64_t d = 0; d < dim; d++) {
+        float q = query[d];
+        s1 += q * c1[d];
+        s2 += q * c2[d];
+        s3 += q * c3[d];
+        s4 += q * c4[d];
+        s5 += q * c5[d];
+        s6 += q * c6[d];
+        s7 += q * c7[d];
+        s8 += q * c8[d];
+        s9 += q * c9[d];
+        s10 += q * c10[d];
+        s11 += q * c11[d];
+        s12 += q * c12[d];
+        s13 += q * c13[d];
+        s14 += q * c14[d];
+        s15 += q * c15[d];
+        s16 += q * c16[d];
+    }
+    r1 = s1; r2 = s2; r3 = s3; r4 = s4; r5 = s5; r6 = s6; r7 = s7; r8 = s8;
+    r9 = s9; r10 = s10; r11 = s11; r12 = s12; r13 = s13; r14 = s14; r15 = s15; r16 = s16;
+}
+
+void
+FP32ComputeL2SqrBatch16(const float* RESTRICT query,
+                        uint64_t dim,
+                        const float* RESTRICT c1,
+                        const float* RESTRICT c2,
+                        const float* RESTRICT c3,
+                        const float* RESTRICT c4,
+                        const float* RESTRICT c5,
+                        const float* RESTRICT c6,
+                        const float* RESTRICT c7,
+                        const float* RESTRICT c8,
+                        const float* RESTRICT c9,
+                        const float* RESTRICT c10,
+                        const float* RESTRICT c11,
+                        const float* RESTRICT c12,
+                        const float* RESTRICT c13,
+                        const float* RESTRICT c14,
+                        const float* RESTRICT c15,
+                        const float* RESTRICT c16,
+                        float& r1,
+                        float& r2,
+                        float& r3,
+                        float& r4,
+                        float& r5,
+                        float& r6,
+                        float& r7,
+                        float& r8,
+                        float& r9,
+                        float& r10,
+                        float& r11,
+                        float& r12,
+                        float& r13,
+                        float& r14,
+                        float& r15,
+                        float& r16) {
+    float s1 = 0, s2 = 0, s3 = 0, s4 = 0, s5 = 0, s6 = 0, s7 = 0, s8 = 0;
+    float s9 = 0, s10 = 0, s11 = 0, s12 = 0, s13 = 0, s14 = 0, s15 = 0, s16 = 0;
+    for (uint64_t d = 0; d < dim; d++) {
+        float q = query[d];
+        float d1 = q - c1[d]; s1 += d1 * d1;
+        float d2 = q - c2[d]; s2 += d2 * d2;
+        float d3 = q - c3[d]; s3 += d3 * d3;
+        float d4 = q - c4[d]; s4 += d4 * d4;
+        float d5 = q - c5[d]; s5 += d5 * d5;
+        float d6 = q - c6[d]; s6 += d6 * d6;
+        float d7 = q - c7[d]; s7 += d7 * d7;
+        float d8 = q - c8[d]; s8 += d8 * d8;
+        float d9 = q - c9[d]; s9 += d9 * d9;
+        float d10 = q - c10[d]; s10 += d10 * d10;
+        float d11 = q - c11[d]; s11 += d11 * d11;
+        float d12 = q - c12[d]; s12 += d12 * d12;
+        float d13 = q - c13[d]; s13 += d13 * d13;
+        float d14 = q - c14[d]; s14 += d14 * d14;
+        float d15 = q - c15[d]; s15 += d15 * d15;
+        float d16 = q - c16[d]; s16 += d16 * d16;
+    }
+    r1 = s1; r2 = s2; r3 = s3; r4 = s4; r5 = s5; r6 = s6; r7 = s7; r8 = s8;
+    r9 = s9; r10 = s10; r11 = s11; r12 = s12; r13 = s13; r14 = s14; r15 = s15; r16 = s16;
+}
+
+void
 FP32Sub(const float* x, const float* y, float* z, uint64_t dim) {
     simd::BinaryOpImpl<simd::SimdTraits<simd::Generic_Tag>, simd::BinaryOp::Sub>(x, y, z, dim);
 }

@@ -94,6 +94,60 @@ public:
                            float& dists4) const;
 
     void
+    ComputeDistsBatch8Impl(Computer<FP32Quantizer<metric>>& computer,
+                           const uint8_t* codes1,
+                           const uint8_t* codes2,
+                           const uint8_t* codes3,
+                           const uint8_t* codes4,
+                           const uint8_t* codes5,
+                           const uint8_t* codes6,
+                           const uint8_t* codes7,
+                           const uint8_t* codes8,
+                           float& dists1,
+                           float& dists2,
+                           float& dists3,
+                           float& dists4,
+                           float& dists5,
+                           float& dists6,
+                           float& dists7,
+                           float& dists8) const;
+
+    void
+    ComputeDistsBatch16Impl(Computer<FP32Quantizer<metric>>& computer,
+                            const uint8_t* codes1,
+                            const uint8_t* codes2,
+                            const uint8_t* codes3,
+                            const uint8_t* codes4,
+                            const uint8_t* codes5,
+                            const uint8_t* codes6,
+                            const uint8_t* codes7,
+                            const uint8_t* codes8,
+                            const uint8_t* codes9,
+                            const uint8_t* codes10,
+                            const uint8_t* codes11,
+                            const uint8_t* codes12,
+                            const uint8_t* codes13,
+                            const uint8_t* codes14,
+                            const uint8_t* codes15,
+                            const uint8_t* codes16,
+                            float& dists1,
+                            float& dists2,
+                            float& dists3,
+                            float& dists4,
+                            float& dists5,
+                            float& dists6,
+                            float& dists7,
+                            float& dists8,
+                            float& dists9,
+                            float& dists10,
+                            float& dists11,
+                            float& dists12,
+                            float& dists13,
+                            float& dists14,
+                            float& dists15,
+                            float& dists16) const;
+
+    void
     ReleaseComputerImpl(Computer<FP32Quantizer<metric>>& computer) const;
 
     [[nodiscard]] std::string

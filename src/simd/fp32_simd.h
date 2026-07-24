@@ -101,6 +101,108 @@ using FP32ComputeBatch4Type = void (*)(const float* RESTRICT query,
 extern FP32ComputeBatch4Type FP32ComputeIPBatch4;
 extern FP32ComputeBatch4Type FP32ComputeL2SqrBatch4;
 
+#define DECLARE_FP32_BATCH8_FUNCTIONS(ns)                                         \
+    namespace ns {                                                                \
+    void                                                                          \
+    FP32ComputeIPBatch8(const float* RESTRICT query,                              \
+                        uint64_t dim,                                             \
+                        const float* RESTRICT c1, const float* RESTRICT c2,       \
+                        const float* RESTRICT c3, const float* RESTRICT c4,       \
+                        const float* RESTRICT c5, const float* RESTRICT c6,       \
+                        const float* RESTRICT c7, const float* RESTRICT c8,       \
+                        float& r1, float& r2, float& r3, float& r4,              \
+                        float& r5, float& r6, float& r7, float& r8);             \
+    void                                                                          \
+    FP32ComputeL2SqrBatch8(const float* RESTRICT query,                           \
+                           uint64_t dim,                                          \
+                           const float* RESTRICT c1, const float* RESTRICT c2,    \
+                           const float* RESTRICT c3, const float* RESTRICT c4,    \
+                           const float* RESTRICT c5, const float* RESTRICT c6,    \
+                           const float* RESTRICT c7, const float* RESTRICT c8,    \
+                           float& r1, float& r2, float& r3, float& r4,           \
+                           float& r5, float& r6, float& r7, float& r8);          \
+    } /* namespace ns */
+
+DECLARE_FP32_BATCH8_FUNCTIONS(generic)
+DECLARE_FP32_BATCH8_FUNCTIONS(sse)
+DECLARE_FP32_BATCH8_FUNCTIONS(avx)
+DECLARE_FP32_BATCH8_FUNCTIONS(avx2)
+DECLARE_FP32_BATCH8_FUNCTIONS(avx512)
+DECLARE_FP32_BATCH8_FUNCTIONS(neon)
+DECLARE_FP32_BATCH8_FUNCTIONS(sve)
+#undef DECLARE_FP32_BATCH8_FUNCTIONS
+
+using FP32ComputeBatch8Type = void (*)(const float* RESTRICT query,
+                                       uint64_t dim,
+                                       const float* RESTRICT c1, const float* RESTRICT c2,
+                                       const float* RESTRICT c3, const float* RESTRICT c4,
+                                       const float* RESTRICT c5, const float* RESTRICT c6,
+                                       const float* RESTRICT c7, const float* RESTRICT c8,
+                                       float& r1, float& r2, float& r3, float& r4,
+                                       float& r5, float& r6, float& r7, float& r8);
+extern FP32ComputeBatch8Type FP32ComputeIPBatch8;
+extern FP32ComputeBatch8Type FP32ComputeL2SqrBatch8;
+
+#define DECLARE_FP32_BATCH16_FUNCTIONS(ns)                                              \
+    namespace ns {                                                                      \
+    void                                                                                \
+    FP32ComputeIPBatch16(const float* RESTRICT query,                                   \
+                         uint64_t dim,                                                  \
+                         const float* RESTRICT c1, const float* RESTRICT c2,            \
+                         const float* RESTRICT c3, const float* RESTRICT c4,            \
+                         const float* RESTRICT c5, const float* RESTRICT c6,            \
+                         const float* RESTRICT c7, const float* RESTRICT c8,            \
+                         const float* RESTRICT c9, const float* RESTRICT c10,           \
+                         const float* RESTRICT c11, const float* RESTRICT c12,          \
+                         const float* RESTRICT c13, const float* RESTRICT c14,          \
+                         const float* RESTRICT c15, const float* RESTRICT c16,          \
+                         float& r1, float& r2, float& r3, float& r4,                   \
+                         float& r5, float& r6, float& r7, float& r8,                   \
+                         float& r9, float& r10, float& r11, float& r12,                \
+                         float& r13, float& r14, float& r15, float& r16);              \
+    void                                                                                \
+    FP32ComputeL2SqrBatch16(const float* RESTRICT query,                                \
+                            uint64_t dim,                                               \
+                            const float* RESTRICT c1, const float* RESTRICT c2,         \
+                            const float* RESTRICT c3, const float* RESTRICT c4,         \
+                            const float* RESTRICT c5, const float* RESTRICT c6,         \
+                            const float* RESTRICT c7, const float* RESTRICT c8,         \
+                            const float* RESTRICT c9, const float* RESTRICT c10,        \
+                            const float* RESTRICT c11, const float* RESTRICT c12,       \
+                            const float* RESTRICT c13, const float* RESTRICT c14,       \
+                            const float* RESTRICT c15, const float* RESTRICT c16,       \
+                            float& r1, float& r2, float& r3, float& r4,                \
+                            float& r5, float& r6, float& r7, float& r8,                \
+                            float& r9, float& r10, float& r11, float& r12,             \
+                            float& r13, float& r14, float& r15, float& r16);           \
+    } /* namespace ns */
+
+DECLARE_FP32_BATCH16_FUNCTIONS(generic)
+DECLARE_FP32_BATCH16_FUNCTIONS(sse)
+DECLARE_FP32_BATCH16_FUNCTIONS(avx)
+DECLARE_FP32_BATCH16_FUNCTIONS(avx2)
+DECLARE_FP32_BATCH16_FUNCTIONS(avx512)
+DECLARE_FP32_BATCH16_FUNCTIONS(neon)
+DECLARE_FP32_BATCH16_FUNCTIONS(sve)
+#undef DECLARE_FP32_BATCH16_FUNCTIONS
+
+using FP32ComputeBatch16Type = void (*)(const float* RESTRICT query,
+                                        uint64_t dim,
+                                        const float* RESTRICT c1, const float* RESTRICT c2,
+                                        const float* RESTRICT c3, const float* RESTRICT c4,
+                                        const float* RESTRICT c5, const float* RESTRICT c6,
+                                        const float* RESTRICT c7, const float* RESTRICT c8,
+                                        const float* RESTRICT c9, const float* RESTRICT c10,
+                                        const float* RESTRICT c11, const float* RESTRICT c12,
+                                        const float* RESTRICT c13, const float* RESTRICT c14,
+                                        const float* RESTRICT c15, const float* RESTRICT c16,
+                                        float& r1, float& r2, float& r3, float& r4,
+                                        float& r5, float& r6, float& r7, float& r8,
+                                        float& r9, float& r10, float& r11, float& r12,
+                                        float& r13, float& r14, float& r15, float& r16);
+extern FP32ComputeBatch16Type FP32ComputeIPBatch16;
+extern FP32ComputeBatch16Type FP32ComputeL2SqrBatch16;
+
 using FP32ArithmeticType = void (*)(const float* x, const float* y, float* z, uint64_t dim);
 extern FP32ArithmeticType FP32Sub;
 extern FP32ArithmeticType FP32Add;

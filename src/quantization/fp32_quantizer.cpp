@@ -259,6 +259,354 @@ FP32Quantizer<metric>::ComputeDistsBatch4Impl(Computer<FP32Quantizer<metric>>& c
 
 template <MetricType metric>
 void
+FP32Quantizer<metric>::ComputeDistsBatch8Impl(Computer<FP32Quantizer<metric>>& computer,
+                                              const uint8_t* codes1,
+                                              const uint8_t* codes2,
+                                              const uint8_t* codes3,
+                                              const uint8_t* codes4,
+                                              const uint8_t* codes5,
+                                              const uint8_t* codes6,
+                                              const uint8_t* codes7,
+                                              const uint8_t* codes8,
+                                              float& dists1,
+                                              float& dists2,
+                                              float& dists3,
+                                              float& dists4,
+                                              float& dists5,
+                                              float& dists6,
+                                              float& dists7,
+                                              float& dists8) const {
+    if constexpr (metric == MetricType::METRIC_TYPE_IP) {
+        FP32ComputeIPBatch8(reinterpret_cast<const float*>(computer.buf_),
+                            this->dim_,
+                            reinterpret_cast<const float*>(codes1),
+                            reinterpret_cast<const float*>(codes2),
+                            reinterpret_cast<const float*>(codes3),
+                            reinterpret_cast<const float*>(codes4),
+                            reinterpret_cast<const float*>(codes5),
+                            reinterpret_cast<const float*>(codes6),
+                            reinterpret_cast<const float*>(codes7),
+                            reinterpret_cast<const float*>(codes8),
+                            dists1,
+                            dists2,
+                            dists3,
+                            dists4,
+                            dists5,
+                            dists6,
+                            dists7,
+                            dists8);
+        dists1 = 1.0F - dists1;
+        dists2 = 1.0F - dists2;
+        dists3 = 1.0F - dists3;
+        dists4 = 1.0F - dists4;
+        dists5 = 1.0F - dists5;
+        dists6 = 1.0F - dists6;
+        dists7 = 1.0F - dists7;
+        dists8 = 1.0F - dists8;
+    } else if (metric == MetricType::METRIC_TYPE_COSINE) {
+        FP32ComputeIPBatch8(reinterpret_cast<const float*>(computer.buf_),
+                            this->dim_,
+                            reinterpret_cast<const float*>(codes1),
+                            reinterpret_cast<const float*>(codes2),
+                            reinterpret_cast<const float*>(codes3),
+                            reinterpret_cast<const float*>(codes4),
+                            reinterpret_cast<const float*>(codes5),
+                            reinterpret_cast<const float*>(codes6),
+                            reinterpret_cast<const float*>(codes7),
+                            reinterpret_cast<const float*>(codes8),
+                            dists1,
+                            dists2,
+                            dists3,
+                            dists4,
+                            dists5,
+                            dists6,
+                            dists7,
+                            dists8);
+        if (this->hold_molds_) {
+            const auto* mold1 = reinterpret_cast<const float*>(codes1 + this->dim_ * sizeof(float));
+            const auto* mold2 = reinterpret_cast<const float*>(codes2 + this->dim_ * sizeof(float));
+            const auto* mold3 = reinterpret_cast<const float*>(codes3 + this->dim_ * sizeof(float));
+            const auto* mold4 = reinterpret_cast<const float*>(codes4 + this->dim_ * sizeof(float));
+            const auto* mold5 = reinterpret_cast<const float*>(codes5 + this->dim_ * sizeof(float));
+            const auto* mold6 = reinterpret_cast<const float*>(codes6 + this->dim_ * sizeof(float));
+            const auto* mold7 = reinterpret_cast<const float*>(codes7 + this->dim_ * sizeof(float));
+            const auto* mold8 = reinterpret_cast<const float*>(codes8 + this->dim_ * sizeof(float));
+            dists1 /= mold1[0];
+            dists2 /= mold2[0];
+            dists3 /= mold3[0];
+            dists4 /= mold4[0];
+            dists5 /= mold5[0];
+            dists6 /= mold6[0];
+            dists7 /= mold7[0];
+            dists8 /= mold8[0];
+        }
+        dists1 = 1.0F - dists1;
+        dists2 = 1.0F - dists2;
+        dists3 = 1.0F - dists3;
+        dists4 = 1.0F - dists4;
+        dists5 = 1.0F - dists5;
+        dists6 = 1.0F - dists6;
+        dists7 = 1.0F - dists7;
+        dists8 = 1.0F - dists8;
+    } else if constexpr (metric == MetricType::METRIC_TYPE_L2SQR) {
+        FP32ComputeL2SqrBatch8(reinterpret_cast<const float*>(computer.buf_),
+                               this->dim_,
+                               reinterpret_cast<const float*>(codes1),
+                               reinterpret_cast<const float*>(codes2),
+                               reinterpret_cast<const float*>(codes3),
+                               reinterpret_cast<const float*>(codes4),
+                               reinterpret_cast<const float*>(codes5),
+                               reinterpret_cast<const float*>(codes6),
+                               reinterpret_cast<const float*>(codes7),
+                               reinterpret_cast<const float*>(codes8),
+                               dists1,
+                               dists2,
+                               dists3,
+                               dists4,
+                               dists5,
+                               dists6,
+                               dists7,
+                               dists8);
+    } else {
+        dists1 = 0.0F;
+        dists2 = 0.0F;
+        dists3 = 0.0F;
+        dists4 = 0.0F;
+        dists5 = 0.0F;
+        dists6 = 0.0F;
+        dists7 = 0.0F;
+        dists8 = 0.0F;
+    }
+}
+
+template <MetricType metric>
+void
+FP32Quantizer<metric>::ComputeDistsBatch16Impl(Computer<FP32Quantizer<metric>>& computer,
+                                               const uint8_t* codes1,
+                                               const uint8_t* codes2,
+                                               const uint8_t* codes3,
+                                               const uint8_t* codes4,
+                                               const uint8_t* codes5,
+                                               const uint8_t* codes6,
+                                               const uint8_t* codes7,
+                                               const uint8_t* codes8,
+                                               const uint8_t* codes9,
+                                               const uint8_t* codes10,
+                                               const uint8_t* codes11,
+                                               const uint8_t* codes12,
+                                               const uint8_t* codes13,
+                                               const uint8_t* codes14,
+                                               const uint8_t* codes15,
+                                               const uint8_t* codes16,
+                                               float& dists1,
+                                               float& dists2,
+                                               float& dists3,
+                                               float& dists4,
+                                               float& dists5,
+                                               float& dists6,
+                                               float& dists7,
+                                               float& dists8,
+                                               float& dists9,
+                                               float& dists10,
+                                               float& dists11,
+                                               float& dists12,
+                                               float& dists13,
+                                               float& dists14,
+                                               float& dists15,
+                                               float& dists16) const {
+    if constexpr (metric == MetricType::METRIC_TYPE_IP) {
+        FP32ComputeIPBatch16(reinterpret_cast<const float*>(computer.buf_),
+                             this->dim_,
+                             reinterpret_cast<const float*>(codes1),
+                             reinterpret_cast<const float*>(codes2),
+                             reinterpret_cast<const float*>(codes3),
+                             reinterpret_cast<const float*>(codes4),
+                             reinterpret_cast<const float*>(codes5),
+                             reinterpret_cast<const float*>(codes6),
+                             reinterpret_cast<const float*>(codes7),
+                             reinterpret_cast<const float*>(codes8),
+                             reinterpret_cast<const float*>(codes9),
+                             reinterpret_cast<const float*>(codes10),
+                             reinterpret_cast<const float*>(codes11),
+                             reinterpret_cast<const float*>(codes12),
+                             reinterpret_cast<const float*>(codes13),
+                             reinterpret_cast<const float*>(codes14),
+                             reinterpret_cast<const float*>(codes15),
+                             reinterpret_cast<const float*>(codes16),
+                             dists1,
+                             dists2,
+                             dists3,
+                             dists4,
+                             dists5,
+                             dists6,
+                             dists7,
+                             dists8,
+                             dists9,
+                             dists10,
+                             dists11,
+                             dists12,
+                             dists13,
+                             dists14,
+                             dists15,
+                             dists16);
+        dists1 = 1.0F - dists1;
+        dists2 = 1.0F - dists2;
+        dists3 = 1.0F - dists3;
+        dists4 = 1.0F - dists4;
+        dists5 = 1.0F - dists5;
+        dists6 = 1.0F - dists6;
+        dists7 = 1.0F - dists7;
+        dists8 = 1.0F - dists8;
+        dists9 = 1.0F - dists9;
+        dists10 = 1.0F - dists10;
+        dists11 = 1.0F - dists11;
+        dists12 = 1.0F - dists12;
+        dists13 = 1.0F - dists13;
+        dists14 = 1.0F - dists14;
+        dists15 = 1.0F - dists15;
+        dists16 = 1.0F - dists16;
+    } else if (metric == MetricType::METRIC_TYPE_COSINE) {
+        FP32ComputeIPBatch16(reinterpret_cast<const float*>(computer.buf_),
+                             this->dim_,
+                             reinterpret_cast<const float*>(codes1),
+                             reinterpret_cast<const float*>(codes2),
+                             reinterpret_cast<const float*>(codes3),
+                             reinterpret_cast<const float*>(codes4),
+                             reinterpret_cast<const float*>(codes5),
+                             reinterpret_cast<const float*>(codes6),
+                             reinterpret_cast<const float*>(codes7),
+                             reinterpret_cast<const float*>(codes8),
+                             reinterpret_cast<const float*>(codes9),
+                             reinterpret_cast<const float*>(codes10),
+                             reinterpret_cast<const float*>(codes11),
+                             reinterpret_cast<const float*>(codes12),
+                             reinterpret_cast<const float*>(codes13),
+                             reinterpret_cast<const float*>(codes14),
+                             reinterpret_cast<const float*>(codes15),
+                             reinterpret_cast<const float*>(codes16),
+                             dists1,
+                             dists2,
+                             dists3,
+                             dists4,
+                             dists5,
+                             dists6,
+                             dists7,
+                             dists8,
+                             dists9,
+                             dists10,
+                             dists11,
+                             dists12,
+                             dists13,
+                             dists14,
+                             dists15,
+                             dists16);
+        if (this->hold_molds_) {
+            const auto* mold1 = reinterpret_cast<const float*>(codes1 + this->dim_ * sizeof(float));
+            const auto* mold2 = reinterpret_cast<const float*>(codes2 + this->dim_ * sizeof(float));
+            const auto* mold3 = reinterpret_cast<const float*>(codes3 + this->dim_ * sizeof(float));
+            const auto* mold4 = reinterpret_cast<const float*>(codes4 + this->dim_ * sizeof(float));
+            const auto* mold5 = reinterpret_cast<const float*>(codes5 + this->dim_ * sizeof(float));
+            const auto* mold6 = reinterpret_cast<const float*>(codes6 + this->dim_ * sizeof(float));
+            const auto* mold7 = reinterpret_cast<const float*>(codes7 + this->dim_ * sizeof(float));
+            const auto* mold8 = reinterpret_cast<const float*>(codes8 + this->dim_ * sizeof(float));
+            const auto* mold9 = reinterpret_cast<const float*>(codes9 + this->dim_ * sizeof(float));
+            const auto* mold10 = reinterpret_cast<const float*>(codes10 + this->dim_ * sizeof(float));
+            const auto* mold11 = reinterpret_cast<const float*>(codes11 + this->dim_ * sizeof(float));
+            const auto* mold12 = reinterpret_cast<const float*>(codes12 + this->dim_ * sizeof(float));
+            const auto* mold13 = reinterpret_cast<const float*>(codes13 + this->dim_ * sizeof(float));
+            const auto* mold14 = reinterpret_cast<const float*>(codes14 + this->dim_ * sizeof(float));
+            const auto* mold15 = reinterpret_cast<const float*>(codes15 + this->dim_ * sizeof(float));
+            const auto* mold16 = reinterpret_cast<const float*>(codes16 + this->dim_ * sizeof(float));
+            dists1 /= mold1[0];
+            dists2 /= mold2[0];
+            dists3 /= mold3[0];
+            dists4 /= mold4[0];
+            dists5 /= mold5[0];
+            dists6 /= mold6[0];
+            dists7 /= mold7[0];
+            dists8 /= mold8[0];
+            dists9 /= mold9[0];
+            dists10 /= mold10[0];
+            dists11 /= mold11[0];
+            dists12 /= mold12[0];
+            dists13 /= mold13[0];
+            dists14 /= mold14[0];
+            dists15 /= mold15[0];
+            dists16 /= mold16[0];
+        }
+        dists1 = 1.0F - dists1;
+        dists2 = 1.0F - dists2;
+        dists3 = 1.0F - dists3;
+        dists4 = 1.0F - dists4;
+        dists5 = 1.0F - dists5;
+        dists6 = 1.0F - dists6;
+        dists7 = 1.0F - dists7;
+        dists8 = 1.0F - dists8;
+        dists9 = 1.0F - dists9;
+        dists10 = 1.0F - dists10;
+        dists11 = 1.0F - dists11;
+        dists12 = 1.0F - dists12;
+        dists13 = 1.0F - dists13;
+        dists14 = 1.0F - dists14;
+        dists15 = 1.0F - dists15;
+        dists16 = 1.0F - dists16;
+    } else if constexpr (metric == MetricType::METRIC_TYPE_L2SQR) {
+        FP32ComputeL2SqrBatch16(reinterpret_cast<const float*>(computer.buf_),
+                                this->dim_,
+                                reinterpret_cast<const float*>(codes1),
+                                reinterpret_cast<const float*>(codes2),
+                                reinterpret_cast<const float*>(codes3),
+                                reinterpret_cast<const float*>(codes4),
+                                reinterpret_cast<const float*>(codes5),
+                                reinterpret_cast<const float*>(codes6),
+                                reinterpret_cast<const float*>(codes7),
+                                reinterpret_cast<const float*>(codes8),
+                                reinterpret_cast<const float*>(codes9),
+                                reinterpret_cast<const float*>(codes10),
+                                reinterpret_cast<const float*>(codes11),
+                                reinterpret_cast<const float*>(codes12),
+                                reinterpret_cast<const float*>(codes13),
+                                reinterpret_cast<const float*>(codes14),
+                                reinterpret_cast<const float*>(codes15),
+                                reinterpret_cast<const float*>(codes16),
+                                dists1,
+                                dists2,
+                                dists3,
+                                dists4,
+                                dists5,
+                                dists6,
+                                dists7,
+                                dists8,
+                                dists9,
+                                dists10,
+                                dists11,
+                                dists12,
+                                dists13,
+                                dists14,
+                                dists15,
+                                dists16);
+    } else {
+        dists1 = 0.0F;
+        dists2 = 0.0F;
+        dists3 = 0.0F;
+        dists4 = 0.0F;
+        dists5 = 0.0F;
+        dists6 = 0.0F;
+        dists7 = 0.0F;
+        dists8 = 0.0F;
+        dists9 = 0.0F;
+        dists10 = 0.0F;
+        dists11 = 0.0F;
+        dists12 = 0.0F;
+        dists13 = 0.0F;
+        dists14 = 0.0F;
+        dists15 = 0.0F;
+        dists16 = 0.0F;
+    }
+}
+
+template <MetricType metric>
+void
 FP32Quantizer<metric>::ReleaseComputerImpl(Computer<FP32Quantizer<metric>>& computer) const {
     this->allocator_->Deallocate(computer.buf_);
 }

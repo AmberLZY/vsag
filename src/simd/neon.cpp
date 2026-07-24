@@ -207,6 +207,1184 @@ FP32ComputeL2SqrBatch4(const float* RESTRICT query,
 }
 
 void
+FP32ComputeIPBatch8(const float* RESTRICT query,
+                    uint64_t dim,
+                    const float* RESTRICT c1,
+                    const float* RESTRICT c2,
+                    const float* RESTRICT c3,
+                    const float* RESTRICT c4,
+                    const float* RESTRICT c5,
+                    const float* RESTRICT c6,
+                    const float* RESTRICT c7,
+                    const float* RESTRICT c8,
+                    float& r1,
+                    float& r2,
+                    float& r3,
+                    float& r4,
+                    float& r5,
+                    float& r6,
+                    float& r7,
+                    float& r8) {
+#if defined(ENABLE_NEON)
+    constexpr uint64_t single_round = 4;
+    constexpr uint64_t multi_round = 16;
+    uint64_t i;
+
+    if (dim >= multi_round) {
+        float32x4_t res1 = vdupq_n_f32(0.0f);
+        float32x4_t res2 = vdupq_n_f32(0.0f);
+        float32x4_t res3 = vdupq_n_f32(0.0f);
+        float32x4_t res4 = vdupq_n_f32(0.0f);
+        float32x4_t res5 = vdupq_n_f32(0.0f);
+        float32x4_t res6 = vdupq_n_f32(0.0f);
+        float32x4_t res7 = vdupq_n_f32(0.0f);
+        float32x4_t res8 = vdupq_n_f32(0.0f);
+
+        for (i = 0; i <= dim - multi_round; i += multi_round) {
+            __builtin_prefetch(query + i + multi_round, 0, 1);
+            __builtin_prefetch(c1 + i + multi_round, 0, 3);
+            __builtin_prefetch(c2 + i + multi_round, 0, 3);
+            __builtin_prefetch(c3 + i + multi_round, 0, 3);
+            __builtin_prefetch(c4 + i + multi_round, 0, 3);
+            __builtin_prefetch(c5 + i + multi_round, 0, 3);
+            __builtin_prefetch(c6 + i + multi_round, 0, 3);
+            __builtin_prefetch(c7 + i + multi_round, 0, 3);
+            __builtin_prefetch(c8 + i + multi_round, 0, 3);
+
+            for (uint64_t j = 0; j < multi_round; j += single_round) {
+                const float32x4_t q = vld1q_f32(query + i + j);
+                float32x4_t b1 = vld1q_f32(c1 + i + j);
+                float32x4_t b2 = vld1q_f32(c2 + i + j);
+                float32x4_t b3 = vld1q_f32(c3 + i + j);
+                float32x4_t b4 = vld1q_f32(c4 + i + j);
+                float32x4_t b5 = vld1q_f32(c5 + i + j);
+                float32x4_t b6 = vld1q_f32(c6 + i + j);
+                float32x4_t b7 = vld1q_f32(c7 + i + j);
+                float32x4_t b8 = vld1q_f32(c8 + i + j);
+                res1 = vmlaq_f32(res1, b1, q);
+                res2 = vmlaq_f32(res2, b2, q);
+                res3 = vmlaq_f32(res3, b3, q);
+                res4 = vmlaq_f32(res4, b4, q);
+                res5 = vmlaq_f32(res5, b5, q);
+                res6 = vmlaq_f32(res6, b6, q);
+                res7 = vmlaq_f32(res7, b7, q);
+                res8 = vmlaq_f32(res8, b8, q);
+            }
+        }
+
+        for (; i <= dim - single_round; i += single_round) {
+            const float32x4_t q = vld1q_f32(query + i);
+            float32x4_t b1 = vld1q_f32(c1 + i);
+            float32x4_t b2 = vld1q_f32(c2 + i);
+            float32x4_t b3 = vld1q_f32(c3 + i);
+            float32x4_t b4 = vld1q_f32(c4 + i);
+            float32x4_t b5 = vld1q_f32(c5 + i);
+            float32x4_t b6 = vld1q_f32(c6 + i);
+            float32x4_t b7 = vld1q_f32(c7 + i);
+            float32x4_t b8 = vld1q_f32(c8 + i);
+            res1 = vmlaq_f32(res1, b1, q);
+            res2 = vmlaq_f32(res2, b2, q);
+            res3 = vmlaq_f32(res3, b3, q);
+            res4 = vmlaq_f32(res4, b4, q);
+            res5 = vmlaq_f32(res5, b5, q);
+            res6 = vmlaq_f32(res6, b6, q);
+            res7 = vmlaq_f32(res7, b7, q);
+            res8 = vmlaq_f32(res8, b8, q);
+        }
+
+        r1 = vaddvq_f32(res1); r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3); r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5); r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7); r8 = vaddvq_f32(res8);
+    } else if (dim >= single_round) {
+        float32x4_t q = vld1q_f32(query);
+        float32x4_t b1 = vld1q_f32(c1);
+        float32x4_t b2 = vld1q_f32(c2);
+        float32x4_t b3 = vld1q_f32(c3);
+        float32x4_t b4 = vld1q_f32(c4);
+        float32x4_t b5 = vld1q_f32(c5);
+        float32x4_t b6 = vld1q_f32(c6);
+        float32x4_t b7 = vld1q_f32(c7);
+        float32x4_t b8 = vld1q_f32(c8);
+        float32x4_t res1 = vmulq_f32(b1, q);
+        float32x4_t res2 = vmulq_f32(b2, q);
+        float32x4_t res3 = vmulq_f32(b3, q);
+        float32x4_t res4 = vmulq_f32(b4, q);
+        float32x4_t res5 = vmulq_f32(b5, q);
+        float32x4_t res6 = vmulq_f32(b6, q);
+        float32x4_t res7 = vmulq_f32(b7, q);
+        float32x4_t res8 = vmulq_f32(b8, q);
+
+        for (i = single_round; i <= dim - single_round; i += single_round) {
+            q = vld1q_f32(query + i);
+            b1 = vld1q_f32(c1 + i); res1 = vmlaq_f32(res1, b1, q);
+            b2 = vld1q_f32(c2 + i); res2 = vmlaq_f32(res2, b2, q);
+            b3 = vld1q_f32(c3 + i); res3 = vmlaq_f32(res3, b3, q);
+            b4 = vld1q_f32(c4 + i); res4 = vmlaq_f32(res4, b4, q);
+            b5 = vld1q_f32(c5 + i); res5 = vmlaq_f32(res5, b5, q);
+            b6 = vld1q_f32(c6 + i); res6 = vmlaq_f32(res6, b6, q);
+            b7 = vld1q_f32(c7 + i); res7 = vmlaq_f32(res7, b7, q);
+            b8 = vld1q_f32(c8 + i); res8 = vmlaq_f32(res8, b8, q);
+        }
+
+        r1 = vaddvq_f32(res1); r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3); r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5); r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7); r8 = vaddvq_f32(res8);
+    } else {
+        r1 = 0.0f; r2 = 0.0f; r3 = 0.0f; r4 = 0.0f;
+        r5 = 0.0f; r6 = 0.0f; r7 = 0.0f; r8 = 0.0f;
+        i = 0;
+    }
+
+    if (i < dim) {
+        float q0 = query[i] * c1[i], q1 = query[i] * c2[i];
+        float q2 = query[i] * c3[i], q3 = query[i] * c4[i];
+        float q4 = query[i] * c5[i], q5 = query[i] * c6[i];
+        float q6 = query[i] * c7[i], q7 = query[i] * c8[i];
+        for (i++; i < dim; ++i) {
+            q0 += query[i] * c1[i]; q1 += query[i] * c2[i];
+            q2 += query[i] * c3[i]; q3 += query[i] * c4[i];
+            q4 += query[i] * c5[i]; q5 += query[i] * c6[i];
+            q6 += query[i] * c7[i]; q7 += query[i] * c8[i];
+        }
+        r1 += q0; r2 += q1; r3 += q2; r4 += q3;
+        r5 += q4; r6 += q5; r7 += q6; r8 += q7;
+    }
+#else
+    return generic::FP32ComputeIPBatch8(
+        query, dim, c1, c2, c3, c4, c5, c6, c7, c8, r1, r2, r3, r4, r5, r6, r7, r8);
+#endif
+}
+
+void
+FP32ComputeIPBatch16(const float* RESTRICT query,
+                     uint64_t dim,
+                     const float* RESTRICT c1,
+                     const float* RESTRICT c2,
+                     const float* RESTRICT c3,
+                     const float* RESTRICT c4,
+                     const float* RESTRICT c5,
+                     const float* RESTRICT c6,
+                     const float* RESTRICT c7,
+                     const float* RESTRICT c8,
+                     const float* RESTRICT c9,
+                     const float* RESTRICT c10,
+                     const float* RESTRICT c11,
+                     const float* RESTRICT c12,
+                     const float* RESTRICT c13,
+                     const float* RESTRICT c14,
+                     const float* RESTRICT c15,
+                     const float* RESTRICT c16,
+                     float& r1,
+                     float& r2,
+                     float& r3,
+                     float& r4,
+                     float& r5,
+                     float& r6,
+                     float& r7,
+                     float& r8,
+                     float& r9,
+                     float& r10,
+                     float& r11,
+                     float& r12,
+                     float& r13,
+                     float& r14,
+                     float& r15,
+                     float& r16) {
+#if defined(ENABLE_NEON)
+    constexpr uint64_t single_round = 4;
+    constexpr uint64_t multi_round = 16;
+    uint64_t i;
+
+    if (dim >= multi_round) {
+        float32x4_t res1 = vdupq_n_f32(0.0f);
+        float32x4_t res2 = vdupq_n_f32(0.0f);
+        float32x4_t res3 = vdupq_n_f32(0.0f);
+        float32x4_t res4 = vdupq_n_f32(0.0f);
+        float32x4_t res5 = vdupq_n_f32(0.0f);
+        float32x4_t res6 = vdupq_n_f32(0.0f);
+        float32x4_t res7 = vdupq_n_f32(0.0f);
+        float32x4_t res8 = vdupq_n_f32(0.0f);
+        float32x4_t res9 = vdupq_n_f32(0.0f);
+        float32x4_t res10 = vdupq_n_f32(0.0f);
+        float32x4_t res11 = vdupq_n_f32(0.0f);
+        float32x4_t res12 = vdupq_n_f32(0.0f);
+        float32x4_t res13 = vdupq_n_f32(0.0f);
+        float32x4_t res14 = vdupq_n_f32(0.0f);
+        float32x4_t res15 = vdupq_n_f32(0.0f);
+        float32x4_t res16 = vdupq_n_f32(0.0f);
+
+        for (i = 0; i <= dim - multi_round; i += multi_round) {
+            __builtin_prefetch(query + i + multi_round, 0, 1);
+            __builtin_prefetch(c1 + i + multi_round, 0, 3);
+            __builtin_prefetch(c2 + i + multi_round, 0, 3);
+            __builtin_prefetch(c3 + i + multi_round, 0, 3);
+            __builtin_prefetch(c4 + i + multi_round, 0, 3);
+            __builtin_prefetch(c5 + i + multi_round, 0, 3);
+            __builtin_prefetch(c6 + i + multi_round, 0, 3);
+            __builtin_prefetch(c7 + i + multi_round, 0, 3);
+            __builtin_prefetch(c8 + i + multi_round, 0, 3);
+            __builtin_prefetch(c9 + i + multi_round, 0, 3);
+            __builtin_prefetch(c10 + i + multi_round, 0, 3);
+            __builtin_prefetch(c11 + i + multi_round, 0, 3);
+            __builtin_prefetch(c12 + i + multi_round, 0, 3);
+            __builtin_prefetch(c13 + i + multi_round, 0, 3);
+            __builtin_prefetch(c14 + i + multi_round, 0, 3);
+            __builtin_prefetch(c15 + i + multi_round, 0, 3);
+            __builtin_prefetch(c16 + i + multi_round, 0, 3);
+
+            for (uint64_t j = 0; j < multi_round; j += single_round) {
+                const float32x4_t q = vld1q_f32(query + i + j);
+
+                float32x4_t b1 = vld1q_f32(c1 + i + j);
+                float32x4_t b2 = vld1q_f32(c2 + i + j);
+                float32x4_t b3 = vld1q_f32(c3 + i + j);
+                float32x4_t b4 = vld1q_f32(c4 + i + j);
+                float32x4_t b5 = vld1q_f32(c5 + i + j);
+                float32x4_t b6 = vld1q_f32(c6 + i + j);
+                float32x4_t b7 = vld1q_f32(c7 + i + j);
+                float32x4_t b8 = vld1q_f32(c8 + i + j);
+
+                res1 = vmlaq_f32(res1, b1, q);
+                res2 = vmlaq_f32(res2, b2, q);
+                res3 = vmlaq_f32(res3, b3, q);
+                res4 = vmlaq_f32(res4, b4, q);
+                res5 = vmlaq_f32(res5, b5, q);
+                res6 = vmlaq_f32(res6, b6, q);
+                res7 = vmlaq_f32(res7, b7, q);
+                res8 = vmlaq_f32(res8, b8, q);
+
+                b1 = vld1q_f32(c9 + i + j);
+                b2 = vld1q_f32(c10 + i + j);
+                b3 = vld1q_f32(c11 + i + j);
+                b4 = vld1q_f32(c12 + i + j);
+                b5 = vld1q_f32(c13 + i + j);
+                b6 = vld1q_f32(c14 + i + j);
+                b7 = vld1q_f32(c15 + i + j);
+                b8 = vld1q_f32(c16 + i + j);
+
+                res9 = vmlaq_f32(res9, b1, q);
+                res10 = vmlaq_f32(res10, b2, q);
+                res11 = vmlaq_f32(res11, b3, q);
+                res12 = vmlaq_f32(res12, b4, q);
+                res13 = vmlaq_f32(res13, b5, q);
+                res14 = vmlaq_f32(res14, b6, q);
+                res15 = vmlaq_f32(res15, b7, q);
+                res16 = vmlaq_f32(res16, b8, q);
+            }
+        }
+
+        for (; i <= dim - single_round; i += single_round) {
+            const float32x4_t q = vld1q_f32(query + i);
+
+            float32x4_t b1 = vld1q_f32(c1 + i);
+            float32x4_t b2 = vld1q_f32(c2 + i);
+            float32x4_t b3 = vld1q_f32(c3 + i);
+            float32x4_t b4 = vld1q_f32(c4 + i);
+            float32x4_t b5 = vld1q_f32(c5 + i);
+            float32x4_t b6 = vld1q_f32(c6 + i);
+            float32x4_t b7 = vld1q_f32(c7 + i);
+            float32x4_t b8 = vld1q_f32(c8 + i);
+
+            res1 = vmlaq_f32(res1, b1, q);
+            res2 = vmlaq_f32(res2, b2, q);
+            res3 = vmlaq_f32(res3, b3, q);
+            res4 = vmlaq_f32(res4, b4, q);
+            res5 = vmlaq_f32(res5, b5, q);
+            res6 = vmlaq_f32(res6, b6, q);
+            res7 = vmlaq_f32(res7, b7, q);
+            res8 = vmlaq_f32(res8, b8, q);
+
+            b1 = vld1q_f32(c9 + i);
+            b2 = vld1q_f32(c10 + i);
+            b3 = vld1q_f32(c11 + i);
+            b4 = vld1q_f32(c12 + i);
+            b5 = vld1q_f32(c13 + i);
+            b6 = vld1q_f32(c14 + i);
+            b7 = vld1q_f32(c15 + i);
+            b8 = vld1q_f32(c16 + i);
+
+            res9 = vmlaq_f32(res9, b1, q);
+            res10 = vmlaq_f32(res10, b2, q);
+            res11 = vmlaq_f32(res11, b3, q);
+            res12 = vmlaq_f32(res12, b4, q);
+            res13 = vmlaq_f32(res13, b5, q);
+            res14 = vmlaq_f32(res14, b6, q);
+            res15 = vmlaq_f32(res15, b7, q);
+            res16 = vmlaq_f32(res16, b8, q);
+        }
+
+        r1 = vaddvq_f32(res1);
+        r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3);
+        r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5);
+        r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7);
+        r8 = vaddvq_f32(res8);
+        r9 = vaddvq_f32(res9);
+        r10 = vaddvq_f32(res10);
+        r11 = vaddvq_f32(res11);
+        r12 = vaddvq_f32(res12);
+        r13 = vaddvq_f32(res13);
+        r14 = vaddvq_f32(res14);
+        r15 = vaddvq_f32(res15);
+        r16 = vaddvq_f32(res16);
+    } else if (dim >= single_round) {
+        float32x4_t q = vld1q_f32(query);
+
+        float32x4_t b1 = vld1q_f32(c1);
+        float32x4_t b2 = vld1q_f32(c2);
+        float32x4_t b3 = vld1q_f32(c3);
+        float32x4_t b4 = vld1q_f32(c4);
+        float32x4_t b5 = vld1q_f32(c5);
+        float32x4_t b6 = vld1q_f32(c6);
+        float32x4_t b7 = vld1q_f32(c7);
+        float32x4_t b8 = vld1q_f32(c8);
+
+        float32x4_t res1 = vmulq_f32(b1, q);
+        float32x4_t res2 = vmulq_f32(b2, q);
+        float32x4_t res3 = vmulq_f32(b3, q);
+        float32x4_t res4 = vmulq_f32(b4, q);
+        float32x4_t res5 = vmulq_f32(b5, q);
+        float32x4_t res6 = vmulq_f32(b6, q);
+        float32x4_t res7 = vmulq_f32(b7, q);
+        float32x4_t res8 = vmulq_f32(b8, q);
+
+        b1 = vld1q_f32(c9);
+        b2 = vld1q_f32(c10);
+        b3 = vld1q_f32(c11);
+        b4 = vld1q_f32(c12);
+        b5 = vld1q_f32(c13);
+        b6 = vld1q_f32(c14);
+        b7 = vld1q_f32(c15);
+        b8 = vld1q_f32(c16);
+
+        float32x4_t res9 = vmulq_f32(b1, q);
+        float32x4_t res10 = vmulq_f32(b2, q);
+        float32x4_t res11 = vmulq_f32(b3, q);
+        float32x4_t res12 = vmulq_f32(b4, q);
+        float32x4_t res13 = vmulq_f32(b5, q);
+        float32x4_t res14 = vmulq_f32(b6, q);
+        float32x4_t res15 = vmulq_f32(b7, q);
+        float32x4_t res16 = vmulq_f32(b8, q);
+
+        for (i = single_round; i <= dim - single_round; i += single_round) {
+            q = vld1q_f32(query + i);
+
+            b1 = vld1q_f32(c1 + i);
+            b2 = vld1q_f32(c2 + i);
+            b3 = vld1q_f32(c3 + i);
+            b4 = vld1q_f32(c4 + i);
+            b5 = vld1q_f32(c5 + i);
+            b6 = vld1q_f32(c6 + i);
+            b7 = vld1q_f32(c7 + i);
+            b8 = vld1q_f32(c8 + i);
+
+            res1 = vmlaq_f32(res1, b1, q);
+            res2 = vmlaq_f32(res2, b2, q);
+            res3 = vmlaq_f32(res3, b3, q);
+            res4 = vmlaq_f32(res4, b4, q);
+            res5 = vmlaq_f32(res5, b5, q);
+            res6 = vmlaq_f32(res6, b6, q);
+            res7 = vmlaq_f32(res7, b7, q);
+            res8 = vmlaq_f32(res8, b8, q);
+
+            b1 = vld1q_f32(c9 + i);
+            b2 = vld1q_f32(c10 + i);
+            b3 = vld1q_f32(c11 + i);
+            b4 = vld1q_f32(c12 + i);
+            b5 = vld1q_f32(c13 + i);
+            b6 = vld1q_f32(c14 + i);
+            b7 = vld1q_f32(c15 + i);
+            b8 = vld1q_f32(c16 + i);
+
+            res9 = vmlaq_f32(res9, b1, q);
+            res10 = vmlaq_f32(res10, b2, q);
+            res11 = vmlaq_f32(res11, b3, q);
+            res12 = vmlaq_f32(res12, b4, q);
+            res13 = vmlaq_f32(res13, b5, q);
+            res14 = vmlaq_f32(res14, b6, q);
+            res15 = vmlaq_f32(res15, b7, q);
+            res16 = vmlaq_f32(res16, b8, q);
+        }
+
+        r1 = vaddvq_f32(res1);
+        r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3);
+        r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5);
+        r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7);
+        r8 = vaddvq_f32(res8);
+        r9 = vaddvq_f32(res9);
+        r10 = vaddvq_f32(res10);
+        r11 = vaddvq_f32(res11);
+        r12 = vaddvq_f32(res12);
+        r13 = vaddvq_f32(res13);
+        r14 = vaddvq_f32(res14);
+        r15 = vaddvq_f32(res15);
+        r16 = vaddvq_f32(res16);
+    } else {
+        r1 = 0.0f;
+        r2 = 0.0f;
+        r3 = 0.0f;
+        r4 = 0.0f;
+        r5 = 0.0f;
+        r6 = 0.0f;
+        r7 = 0.0f;
+        r8 = 0.0f;
+        r9 = 0.0f;
+        r10 = 0.0f;
+        r11 = 0.0f;
+        r12 = 0.0f;
+        r13 = 0.0f;
+        r14 = 0.0f;
+        r15 = 0.0f;
+        r16 = 0.0f;
+        i = 0;
+    }
+
+    if (i < dim) {
+        float q0 = query[i] * c1[i];
+        float q1 = query[i] * c2[i];
+        float q2 = query[i] * c3[i];
+        float q3 = query[i] * c4[i];
+        float q4 = query[i] * c5[i];
+        float q5 = query[i] * c6[i];
+        float q6 = query[i] * c7[i];
+        float q7 = query[i] * c8[i];
+        float q8 = query[i] * c9[i];
+        float q9 = query[i] * c10[i];
+        float q10 = query[i] * c11[i];
+        float q11 = query[i] * c12[i];
+        float q12 = query[i] * c13[i];
+        float q13 = query[i] * c14[i];
+        float q14 = query[i] * c15[i];
+        float q15 = query[i] * c16[i];
+        for (i++; i < dim; ++i) {
+            q0 += query[i] * c1[i];
+            q1 += query[i] * c2[i];
+            q2 += query[i] * c3[i];
+            q3 += query[i] * c4[i];
+            q4 += query[i] * c5[i];
+            q5 += query[i] * c6[i];
+            q6 += query[i] * c7[i];
+            q7 += query[i] * c8[i];
+            q8 += query[i] * c9[i];
+            q9 += query[i] * c10[i];
+            q10 += query[i] * c11[i];
+            q11 += query[i] * c12[i];
+            q12 += query[i] * c13[i];
+            q13 += query[i] * c14[i];
+            q14 += query[i] * c15[i];
+            q15 += query[i] * c16[i];
+        }
+        r1 += q0;
+        r2 += q1;
+        r3 += q2;
+        r4 += q3;
+        r5 += q4;
+        r6 += q5;
+        r7 += q6;
+        r8 += q7;
+        r9 += q8;
+        r10 += q9;
+        r11 += q10;
+        r12 += q11;
+        r13 += q12;
+        r14 += q13;
+        r15 += q14;
+        r16 += q15;
+    }
+#else
+    return generic::FP32ComputeIPBatch16(query,
+                                         dim,
+                                         c1,
+                                         c2,
+                                         c3,
+                                         c4,
+                                         c5,
+                                         c6,
+                                         c7,
+                                         c8,
+                                         c9,
+                                         c10,
+                                         c11,
+                                         c12,
+                                         c13,
+                                         c14,
+                                         c15,
+                                         c16,
+                                         r1,
+                                         r2,
+                                         r3,
+                                         r4,
+                                         r5,
+                                         r6,
+                                         r7,
+                                         r8,
+                                         r9,
+                                         r10,
+                                         r11,
+                                         r12,
+                                         r13,
+                                         r14,
+                                         r15,
+                                         r16);
+#endif
+}
+
+void
+FP32ComputeL2SqrBatch8(const float* RESTRICT query,
+                       uint64_t dim,
+                       const float* RESTRICT c1,
+                       const float* RESTRICT c2,
+                       const float* RESTRICT c3,
+                       const float* RESTRICT c4,
+                       const float* RESTRICT c5,
+                       const float* RESTRICT c6,
+                       const float* RESTRICT c7,
+                       const float* RESTRICT c8,
+                       float& r1,
+                       float& r2,
+                       float& r3,
+                       float& r4,
+                       float& r5,
+                       float& r6,
+                       float& r7,
+                       float& r8) {
+#if defined(ENABLE_NEON)
+    constexpr uint64_t single_round = 4;
+    constexpr uint64_t multi_round = 16;
+    uint64_t i;
+
+    if (dim >= multi_round) {
+        float32x4_t res1 = vdupq_n_f32(0.0f);
+        float32x4_t res2 = vdupq_n_f32(0.0f);
+        float32x4_t res3 = vdupq_n_f32(0.0f);
+        float32x4_t res4 = vdupq_n_f32(0.0f);
+        float32x4_t res5 = vdupq_n_f32(0.0f);
+        float32x4_t res6 = vdupq_n_f32(0.0f);
+        float32x4_t res7 = vdupq_n_f32(0.0f);
+        float32x4_t res8 = vdupq_n_f32(0.0f);
+
+        for (i = 0; i <= dim - multi_round; i += multi_round) {
+            __builtin_prefetch(query + i + multi_round, 0, 1);
+            __builtin_prefetch(c1 + i + multi_round, 0, 3);
+            __builtin_prefetch(c2 + i + multi_round, 0, 3);
+            __builtin_prefetch(c3 + i + multi_round, 0, 3);
+            __builtin_prefetch(c4 + i + multi_round, 0, 3);
+            __builtin_prefetch(c5 + i + multi_round, 0, 3);
+            __builtin_prefetch(c6 + i + multi_round, 0, 3);
+            __builtin_prefetch(c7 + i + multi_round, 0, 3);
+            __builtin_prefetch(c8 + i + multi_round, 0, 3);
+
+            for (uint64_t j = 0; j < multi_round; j += single_round) {
+                const float32x4_t q = vld1q_f32(query + i + j);
+                float32x4_t b1 = vsubq_f32(vld1q_f32(c1 + i + j), q);
+                float32x4_t b2 = vsubq_f32(vld1q_f32(c2 + i + j), q);
+                float32x4_t b3 = vsubq_f32(vld1q_f32(c3 + i + j), q);
+                float32x4_t b4 = vsubq_f32(vld1q_f32(c4 + i + j), q);
+                float32x4_t b5 = vsubq_f32(vld1q_f32(c5 + i + j), q);
+                float32x4_t b6 = vsubq_f32(vld1q_f32(c6 + i + j), q);
+                float32x4_t b7 = vsubq_f32(vld1q_f32(c7 + i + j), q);
+                float32x4_t b8 = vsubq_f32(vld1q_f32(c8 + i + j), q);
+                res1 = vmlaq_f32(res1, b1, b1);
+                res2 = vmlaq_f32(res2, b2, b2);
+                res3 = vmlaq_f32(res3, b3, b3);
+                res4 = vmlaq_f32(res4, b4, b4);
+                res5 = vmlaq_f32(res5, b5, b5);
+                res6 = vmlaq_f32(res6, b6, b6);
+                res7 = vmlaq_f32(res7, b7, b7);
+                res8 = vmlaq_f32(res8, b8, b8);
+            }
+        }
+
+        for (; i <= dim - single_round; i += single_round) {
+            const float32x4_t q = vld1q_f32(query + i);
+            float32x4_t b1 = vsubq_f32(vld1q_f32(c1 + i), q);
+            float32x4_t b2 = vsubq_f32(vld1q_f32(c2 + i), q);
+            float32x4_t b3 = vsubq_f32(vld1q_f32(c3 + i), q);
+            float32x4_t b4 = vsubq_f32(vld1q_f32(c4 + i), q);
+            float32x4_t b5 = vsubq_f32(vld1q_f32(c5 + i), q);
+            float32x4_t b6 = vsubq_f32(vld1q_f32(c6 + i), q);
+            float32x4_t b7 = vsubq_f32(vld1q_f32(c7 + i), q);
+            float32x4_t b8 = vsubq_f32(vld1q_f32(c8 + i), q);
+            res1 = vmlaq_f32(res1, b1, b1);
+            res2 = vmlaq_f32(res2, b2, b2);
+            res3 = vmlaq_f32(res3, b3, b3);
+            res4 = vmlaq_f32(res4, b4, b4);
+            res5 = vmlaq_f32(res5, b5, b5);
+            res6 = vmlaq_f32(res6, b6, b6);
+            res7 = vmlaq_f32(res7, b7, b7);
+            res8 = vmlaq_f32(res8, b8, b8);
+        }
+
+        r1 = vaddvq_f32(res1); r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3); r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5); r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7); r8 = vaddvq_f32(res8);
+    } else if (dim >= single_round) {
+        float32x4_t q = vld1q_f32(query);
+        float32x4_t b1 = vsubq_f32(vld1q_f32(c1), q);
+        float32x4_t b2 = vsubq_f32(vld1q_f32(c2), q);
+        float32x4_t b3 = vsubq_f32(vld1q_f32(c3), q);
+        float32x4_t b4 = vsubq_f32(vld1q_f32(c4), q);
+        float32x4_t b5 = vsubq_f32(vld1q_f32(c5), q);
+        float32x4_t b6 = vsubq_f32(vld1q_f32(c6), q);
+        float32x4_t b7 = vsubq_f32(vld1q_f32(c7), q);
+        float32x4_t b8 = vsubq_f32(vld1q_f32(c8), q);
+        float32x4_t res1 = vmulq_f32(b1, b1);
+        float32x4_t res2 = vmulq_f32(b2, b2);
+        float32x4_t res3 = vmulq_f32(b3, b3);
+        float32x4_t res4 = vmulq_f32(b4, b4);
+        float32x4_t res5 = vmulq_f32(b5, b5);
+        float32x4_t res6 = vmulq_f32(b6, b6);
+        float32x4_t res7 = vmulq_f32(b7, b7);
+        float32x4_t res8 = vmulq_f32(b8, b8);
+
+        for (i = single_round; i <= dim - single_round; i += single_round) {
+            q = vld1q_f32(query + i);
+            b1 = vsubq_f32(vld1q_f32(c1 + i), q);
+            b2 = vsubq_f32(vld1q_f32(c2 + i), q);
+            b3 = vsubq_f32(vld1q_f32(c3 + i), q);
+            b4 = vsubq_f32(vld1q_f32(c4 + i), q);
+            b5 = vsubq_f32(vld1q_f32(c5 + i), q);
+            b6 = vsubq_f32(vld1q_f32(c6 + i), q);
+            b7 = vsubq_f32(vld1q_f32(c7 + i), q);
+            b8 = vsubq_f32(vld1q_f32(c8 + i), q);
+            res1 = vmlaq_f32(res1, b1, b1);
+            res2 = vmlaq_f32(res2, b2, b2);
+            res3 = vmlaq_f32(res3, b3, b3);
+            res4 = vmlaq_f32(res4, b4, b4);
+            res5 = vmlaq_f32(res5, b5, b5);
+            res6 = vmlaq_f32(res6, b6, b6);
+            res7 = vmlaq_f32(res7, b7, b7);
+            res8 = vmlaq_f32(res8, b8, b8);
+        }
+
+        r1 = vaddvq_f32(res1); r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3); r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5); r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7); r8 = vaddvq_f32(res8);
+    } else {
+        r1 = 0.0f; r2 = 0.0f; r3 = 0.0f; r4 = 0.0f;
+        r5 = 0.0f; r6 = 0.0f; r7 = 0.0f; r8 = 0.0f;
+        i = 0;
+    }
+
+    if (i < dim) {
+        float q0 = c1[i] - query[i], q1 = c2[i] - query[i];
+        float q2 = c3[i] - query[i], q3 = c4[i] - query[i];
+        float q4 = c5[i] - query[i], q5 = c6[i] - query[i];
+        float q6 = c7[i] - query[i], q7 = c8[i] - query[i];
+        float d0 = q0 * q0, d1 = q1 * q1, d2 = q2 * q2, d3 = q3 * q3;
+        float d4 = q4 * q4, d5 = q5 * q5, d6 = q6 * q6, d7 = q7 * q7;
+        for (i++; i < dim; ++i) {
+            q0 = c1[i] - query[i]; d0 += q0 * q0;
+            q1 = c2[i] - query[i]; d1 += q1 * q1;
+            q2 = c3[i] - query[i]; d2 += q2 * q2;
+            q3 = c4[i] - query[i]; d3 += q3 * q3;
+            q4 = c5[i] - query[i]; d4 += q4 * q4;
+            q5 = c6[i] - query[i]; d5 += q5 * q5;
+            q6 = c7[i] - query[i]; d6 += q6 * q6;
+            q7 = c8[i] - query[i]; d7 += q7 * q7;
+        }
+        r1 += d0; r2 += d1; r3 += d2; r4 += d3;
+        r5 += d4; r6 += d5; r7 += d6; r8 += d7;
+    }
+#else
+    return generic::FP32ComputeL2SqrBatch8(
+        query, dim, c1, c2, c3, c4, c5, c6, c7, c8, r1, r2, r3, r4, r5, r6, r7, r8);
+#endif
+}
+
+void
+FP32ComputeL2SqrBatch16(const float* RESTRICT query,
+                        uint64_t dim,
+                        const float* RESTRICT c1,
+                        const float* RESTRICT c2,
+                        const float* RESTRICT c3,
+                        const float* RESTRICT c4,
+                        const float* RESTRICT c5,
+                        const float* RESTRICT c6,
+                        const float* RESTRICT c7,
+                        const float* RESTRICT c8,
+                        const float* RESTRICT c9,
+                        const float* RESTRICT c10,
+                        const float* RESTRICT c11,
+                        const float* RESTRICT c12,
+                        const float* RESTRICT c13,
+                        const float* RESTRICT c14,
+                        const float* RESTRICT c15,
+                        const float* RESTRICT c16,
+                        float& r1,
+                        float& r2,
+                        float& r3,
+                        float& r4,
+                        float& r5,
+                        float& r6,
+                        float& r7,
+                        float& r8,
+                        float& r9,
+                        float& r10,
+                        float& r11,
+                        float& r12,
+                        float& r13,
+                        float& r14,
+                        float& r15,
+                        float& r16) {
+#if defined(ENABLE_NEON)
+    constexpr uint64_t single_round = 4;
+    constexpr uint64_t multi_round = 16;
+    uint64_t i;
+
+    if (dim >= multi_round) {
+        float32x4_t res1 = vdupq_n_f32(0.0f);
+        float32x4_t res2 = vdupq_n_f32(0.0f);
+        float32x4_t res3 = vdupq_n_f32(0.0f);
+        float32x4_t res4 = vdupq_n_f32(0.0f);
+        float32x4_t res5 = vdupq_n_f32(0.0f);
+        float32x4_t res6 = vdupq_n_f32(0.0f);
+        float32x4_t res7 = vdupq_n_f32(0.0f);
+        float32x4_t res8 = vdupq_n_f32(0.0f);
+        float32x4_t res9 = vdupq_n_f32(0.0f);
+        float32x4_t res10 = vdupq_n_f32(0.0f);
+        float32x4_t res11 = vdupq_n_f32(0.0f);
+        float32x4_t res12 = vdupq_n_f32(0.0f);
+        float32x4_t res13 = vdupq_n_f32(0.0f);
+        float32x4_t res14 = vdupq_n_f32(0.0f);
+        float32x4_t res15 = vdupq_n_f32(0.0f);
+        float32x4_t res16 = vdupq_n_f32(0.0f);
+
+        for (i = 0; i <= dim - multi_round; i += multi_round) {
+            __builtin_prefetch(query + i + multi_round, 0, 1);
+            __builtin_prefetch(c1 + i + multi_round, 0, 3);
+            __builtin_prefetch(c2 + i + multi_round, 0, 3);
+            __builtin_prefetch(c3 + i + multi_round, 0, 3);
+            __builtin_prefetch(c4 + i + multi_round, 0, 3);
+            __builtin_prefetch(c5 + i + multi_round, 0, 3);
+            __builtin_prefetch(c6 + i + multi_round, 0, 3);
+            __builtin_prefetch(c7 + i + multi_round, 0, 3);
+            __builtin_prefetch(c8 + i + multi_round, 0, 3);
+            __builtin_prefetch(c9 + i + multi_round, 0, 3);
+            __builtin_prefetch(c10 + i + multi_round, 0, 3);
+            __builtin_prefetch(c11 + i + multi_round, 0, 3);
+            __builtin_prefetch(c12 + i + multi_round, 0, 3);
+            __builtin_prefetch(c13 + i + multi_round, 0, 3);
+            __builtin_prefetch(c14 + i + multi_round, 0, 3);
+            __builtin_prefetch(c15 + i + multi_round, 0, 3);
+            __builtin_prefetch(c16 + i + multi_round, 0, 3);
+
+            for (uint64_t j = 0; j < multi_round; j += single_round) {
+                const float32x4_t q = vld1q_f32(query + i + j);
+
+                float32x4_t b1 = vld1q_f32(c1 + i + j);
+                float32x4_t b2 = vld1q_f32(c2 + i + j);
+                float32x4_t b3 = vld1q_f32(c3 + i + j);
+                float32x4_t b4 = vld1q_f32(c4 + i + j);
+                float32x4_t b5 = vld1q_f32(c5 + i + j);
+                float32x4_t b6 = vld1q_f32(c6 + i + j);
+                float32x4_t b7 = vld1q_f32(c7 + i + j);
+                float32x4_t b8 = vld1q_f32(c8 + i + j);
+
+                b1 = vsubq_f32(b1, q);
+                b2 = vsubq_f32(b2, q);
+                b3 = vsubq_f32(b3, q);
+                b4 = vsubq_f32(b4, q);
+                b5 = vsubq_f32(b5, q);
+                b6 = vsubq_f32(b6, q);
+                b7 = vsubq_f32(b7, q);
+                b8 = vsubq_f32(b8, q);
+
+                res1 = vmlaq_f32(res1, b1, b1);
+                res2 = vmlaq_f32(res2, b2, b2);
+                res3 = vmlaq_f32(res3, b3, b3);
+                res4 = vmlaq_f32(res4, b4, b4);
+                res5 = vmlaq_f32(res5, b5, b5);
+                res6 = vmlaq_f32(res6, b6, b6);
+                res7 = vmlaq_f32(res7, b7, b7);
+                res8 = vmlaq_f32(res8, b8, b8);
+
+                b1 = vld1q_f32(c9 + i + j);
+                b2 = vld1q_f32(c10 + i + j);
+                b3 = vld1q_f32(c11 + i + j);
+                b4 = vld1q_f32(c12 + i + j);
+                b5 = vld1q_f32(c13 + i + j);
+                b6 = vld1q_f32(c14 + i + j);
+                b7 = vld1q_f32(c15 + i + j);
+                b8 = vld1q_f32(c16 + i + j);
+
+                b1 = vsubq_f32(b1, q);
+                b2 = vsubq_f32(b2, q);
+                b3 = vsubq_f32(b3, q);
+                b4 = vsubq_f32(b4, q);
+                b5 = vsubq_f32(b5, q);
+                b6 = vsubq_f32(b6, q);
+                b7 = vsubq_f32(b7, q);
+                b8 = vsubq_f32(b8, q);
+
+                res9 = vmlaq_f32(res9, b1, b1);
+                res10 = vmlaq_f32(res10, b2, b2);
+                res11 = vmlaq_f32(res11, b3, b3);
+                res12 = vmlaq_f32(res12, b4, b4);
+                res13 = vmlaq_f32(res13, b5, b5);
+                res14 = vmlaq_f32(res14, b6, b6);
+                res15 = vmlaq_f32(res15, b7, b7);
+                res16 = vmlaq_f32(res16, b8, b8);
+            }
+        }
+
+        for (; i <= dim - single_round; i += single_round) {
+            const float32x4_t q = vld1q_f32(query + i);
+
+            float32x4_t b1 = vld1q_f32(c1 + i);
+            float32x4_t b2 = vld1q_f32(c2 + i);
+            float32x4_t b3 = vld1q_f32(c3 + i);
+            float32x4_t b4 = vld1q_f32(c4 + i);
+            float32x4_t b5 = vld1q_f32(c5 + i);
+            float32x4_t b6 = vld1q_f32(c6 + i);
+            float32x4_t b7 = vld1q_f32(c7 + i);
+            float32x4_t b8 = vld1q_f32(c8 + i);
+
+            b1 = vsubq_f32(b1, q);
+            b2 = vsubq_f32(b2, q);
+            b3 = vsubq_f32(b3, q);
+            b4 = vsubq_f32(b4, q);
+            b5 = vsubq_f32(b5, q);
+            b6 = vsubq_f32(b6, q);
+            b7 = vsubq_f32(b7, q);
+            b8 = vsubq_f32(b8, q);
+
+            res1 = vmlaq_f32(res1, b1, b1);
+            res2 = vmlaq_f32(res2, b2, b2);
+            res3 = vmlaq_f32(res3, b3, b3);
+            res4 = vmlaq_f32(res4, b4, b4);
+            res5 = vmlaq_f32(res5, b5, b5);
+            res6 = vmlaq_f32(res6, b6, b6);
+            res7 = vmlaq_f32(res7, b7, b7);
+            res8 = vmlaq_f32(res8, b8, b8);
+
+            b1 = vld1q_f32(c9 + i);
+            b2 = vld1q_f32(c10 + i);
+            b3 = vld1q_f32(c11 + i);
+            b4 = vld1q_f32(c12 + i);
+            b5 = vld1q_f32(c13 + i);
+            b6 = vld1q_f32(c14 + i);
+            b7 = vld1q_f32(c15 + i);
+            b8 = vld1q_f32(c16 + i);
+
+            b1 = vsubq_f32(b1, q);
+            b2 = vsubq_f32(b2, q);
+            b3 = vsubq_f32(b3, q);
+            b4 = vsubq_f32(b4, q);
+            b5 = vsubq_f32(b5, q);
+            b6 = vsubq_f32(b6, q);
+            b7 = vsubq_f32(b7, q);
+            b8 = vsubq_f32(b8, q);
+
+            res9 = vmlaq_f32(res9, b1, b1);
+            res10 = vmlaq_f32(res10, b2, b2);
+            res11 = vmlaq_f32(res11, b3, b3);
+            res12 = vmlaq_f32(res12, b4, b4);
+            res13 = vmlaq_f32(res13, b5, b5);
+            res14 = vmlaq_f32(res14, b6, b6);
+            res15 = vmlaq_f32(res15, b7, b7);
+            res16 = vmlaq_f32(res16, b8, b8);
+        }
+
+        r1 = vaddvq_f32(res1);
+        r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3);
+        r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5);
+        r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7);
+        r8 = vaddvq_f32(res8);
+        r9 = vaddvq_f32(res9);
+        r10 = vaddvq_f32(res10);
+        r11 = vaddvq_f32(res11);
+        r12 = vaddvq_f32(res12);
+        r13 = vaddvq_f32(res13);
+        r14 = vaddvq_f32(res14);
+        r15 = vaddvq_f32(res15);
+        r16 = vaddvq_f32(res16);
+    } else if (dim >= single_round) {
+        float32x4_t q = vld1q_f32(query);
+
+        float32x4_t b1 = vld1q_f32(c1);
+        float32x4_t b2 = vld1q_f32(c2);
+        float32x4_t b3 = vld1q_f32(c3);
+        float32x4_t b4 = vld1q_f32(c4);
+        float32x4_t b5 = vld1q_f32(c5);
+        float32x4_t b6 = vld1q_f32(c6);
+        float32x4_t b7 = vld1q_f32(c7);
+        float32x4_t b8 = vld1q_f32(c8);
+
+        b1 = vsubq_f32(b1, q);
+        b2 = vsubq_f32(b2, q);
+        b3 = vsubq_f32(b3, q);
+        b4 = vsubq_f32(b4, q);
+        b5 = vsubq_f32(b5, q);
+        b6 = vsubq_f32(b6, q);
+        b7 = vsubq_f32(b7, q);
+        b8 = vsubq_f32(b8, q);
+
+        float32x4_t res1 = vmulq_f32(b1, b1);
+        float32x4_t res2 = vmulq_f32(b2, b2);
+        float32x4_t res3 = vmulq_f32(b3, b3);
+        float32x4_t res4 = vmulq_f32(b4, b4);
+        float32x4_t res5 = vmulq_f32(b5, b5);
+        float32x4_t res6 = vmulq_f32(b6, b6);
+        float32x4_t res7 = vmulq_f32(b7, b7);
+        float32x4_t res8 = vmulq_f32(b8, b8);
+
+        b1 = vld1q_f32(c9);
+        b2 = vld1q_f32(c10);
+        b3 = vld1q_f32(c11);
+        b4 = vld1q_f32(c12);
+        b5 = vld1q_f32(c13);
+        b6 = vld1q_f32(c14);
+        b7 = vld1q_f32(c15);
+        b8 = vld1q_f32(c16);
+
+        b1 = vsubq_f32(b1, q);
+        b2 = vsubq_f32(b2, q);
+        b3 = vsubq_f32(b3, q);
+        b4 = vsubq_f32(b4, q);
+        b5 = vsubq_f32(b5, q);
+        b6 = vsubq_f32(b6, q);
+        b7 = vsubq_f32(b7, q);
+        b8 = vsubq_f32(b8, q);
+
+        float32x4_t res9 = vmulq_f32(b1, b1);
+        float32x4_t res10 = vmulq_f32(b2, b2);
+        float32x4_t res11 = vmulq_f32(b3, b3);
+        float32x4_t res12 = vmulq_f32(b4, b4);
+        float32x4_t res13 = vmulq_f32(b5, b5);
+        float32x4_t res14 = vmulq_f32(b6, b6);
+        float32x4_t res15 = vmulq_f32(b7, b7);
+        float32x4_t res16 = vmulq_f32(b8, b8);
+
+        for (i = single_round; i <= dim - single_round; i += single_round) {
+            q = vld1q_f32(query + i);
+
+            b1 = vld1q_f32(c1 + i);
+            b2 = vld1q_f32(c2 + i);
+            b3 = vld1q_f32(c3 + i);
+            b4 = vld1q_f32(c4 + i);
+            b5 = vld1q_f32(c5 + i);
+            b6 = vld1q_f32(c6 + i);
+            b7 = vld1q_f32(c7 + i);
+            b8 = vld1q_f32(c8 + i);
+
+            b1 = vsubq_f32(b1, q);
+            b2 = vsubq_f32(b2, q);
+            b3 = vsubq_f32(b3, q);
+            b4 = vsubq_f32(b4, q);
+            b5 = vsubq_f32(b5, q);
+            b6 = vsubq_f32(b6, q);
+            b7 = vsubq_f32(b7, q);
+            b8 = vsubq_f32(b8, q);
+
+            res1 = vmlaq_f32(res1, b1, b1);
+            res2 = vmlaq_f32(res2, b2, b2);
+            res3 = vmlaq_f32(res3, b3, b3);
+            res4 = vmlaq_f32(res4, b4, b4);
+            res5 = vmlaq_f32(res5, b5, b5);
+            res6 = vmlaq_f32(res6, b6, b6);
+            res7 = vmlaq_f32(res7, b7, b7);
+            res8 = vmlaq_f32(res8, b8, b8);
+
+            b1 = vld1q_f32(c9 + i);
+            b2 = vld1q_f32(c10 + i);
+            b3 = vld1q_f32(c11 + i);
+            b4 = vld1q_f32(c12 + i);
+            b5 = vld1q_f32(c13 + i);
+            b6 = vld1q_f32(c14 + i);
+            b7 = vld1q_f32(c15 + i);
+            b8 = vld1q_f32(c16 + i);
+
+            b1 = vsubq_f32(b1, q);
+            b2 = vsubq_f32(b2, q);
+            b3 = vsubq_f32(b3, q);
+            b4 = vsubq_f32(b4, q);
+            b5 = vsubq_f32(b5, q);
+            b6 = vsubq_f32(b6, q);
+            b7 = vsubq_f32(b7, q);
+            b8 = vsubq_f32(b8, q);
+
+            res9 = vmlaq_f32(res9, b1, b1);
+            res10 = vmlaq_f32(res10, b2, b2);
+            res11 = vmlaq_f32(res11, b3, b3);
+            res12 = vmlaq_f32(res12, b4, b4);
+            res13 = vmlaq_f32(res13, b5, b5);
+            res14 = vmlaq_f32(res14, b6, b6);
+            res15 = vmlaq_f32(res15, b7, b7);
+            res16 = vmlaq_f32(res16, b8, b8);
+        }
+
+        r1 = vaddvq_f32(res1);
+        r2 = vaddvq_f32(res2);
+        r3 = vaddvq_f32(res3);
+        r4 = vaddvq_f32(res4);
+        r5 = vaddvq_f32(res5);
+        r6 = vaddvq_f32(res6);
+        r7 = vaddvq_f32(res7);
+        r8 = vaddvq_f32(res8);
+        r9 = vaddvq_f32(res9);
+        r10 = vaddvq_f32(res10);
+        r11 = vaddvq_f32(res11);
+        r12 = vaddvq_f32(res12);
+        r13 = vaddvq_f32(res13);
+        r14 = vaddvq_f32(res14);
+        r15 = vaddvq_f32(res15);
+        r16 = vaddvq_f32(res16);
+    } else {
+        r1 = 0.0f;
+        r2 = 0.0f;
+        r3 = 0.0f;
+        r4 = 0.0f;
+        r5 = 0.0f;
+        r6 = 0.0f;
+        r7 = 0.0f;
+        r8 = 0.0f;
+        r9 = 0.0f;
+        r10 = 0.0f;
+        r11 = 0.0f;
+        r12 = 0.0f;
+        r13 = 0.0f;
+        r14 = 0.0f;
+        r15 = 0.0f;
+        r16 = 0.0f;
+        i = 0;
+    }
+
+    if (i < dim) {
+        float q0 = c1[i] - query[i];
+        float q1 = c2[i] - query[i];
+        float q2 = c3[i] - query[i];
+        float q3 = c4[i] - query[i];
+        float q4 = c5[i] - query[i];
+        float q5 = c6[i] - query[i];
+        float q6 = c7[i] - query[i];
+        float q7 = c8[i] - query[i];
+        float q8 = c9[i] - query[i];
+        float q9 = c10[i] - query[i];
+        float q10 = c11[i] - query[i];
+        float q11 = c12[i] - query[i];
+        float q12 = c13[i] - query[i];
+        float q13 = c14[i] - query[i];
+        float q14 = c15[i] - query[i];
+        float q15 = c16[i] - query[i];
+        float d0 = q0 * q0;
+        float d1 = q1 * q1;
+        float d2 = q2 * q2;
+        float d3 = q3 * q3;
+        float d4 = q4 * q4;
+        float d5 = q5 * q5;
+        float d6 = q6 * q6;
+        float d7 = q7 * q7;
+        float d8 = q8 * q8;
+        float d9 = q9 * q9;
+        float d10 = q10 * q10;
+        float d11 = q11 * q11;
+        float d12 = q12 * q12;
+        float d13 = q13 * q13;
+        float d14 = q14 * q14;
+        float d15 = q15 * q15;
+        for (i++; i < dim; ++i) {
+            q0 = c1[i] - query[i];
+            q1 = c2[i] - query[i];
+            q2 = c3[i] - query[i];
+            q3 = c4[i] - query[i];
+            q4 = c5[i] - query[i];
+            q5 = c6[i] - query[i];
+            q6 = c7[i] - query[i];
+            q7 = c8[i] - query[i];
+            q8 = c9[i] - query[i];
+            q9 = c10[i] - query[i];
+            q10 = c11[i] - query[i];
+            q11 = c12[i] - query[i];
+            q12 = c13[i] - query[i];
+            q13 = c14[i] - query[i];
+            q14 = c15[i] - query[i];
+            q15 = c16[i] - query[i];
+            d0 += q0 * q0;
+            d1 += q1 * q1;
+            d2 += q2 * q2;
+            d3 += q3 * q3;
+            d4 += q4 * q4;
+            d5 += q5 * q5;
+            d6 += q6 * q6;
+            d7 += q7 * q7;
+            d8 += q8 * q8;
+            d9 += q9 * q9;
+            d10 += q10 * q10;
+            d11 += q11 * q11;
+            d12 += q12 * q12;
+            d13 += q13 * q13;
+            d14 += q14 * q14;
+            d15 += q15 * q15;
+        }
+        r1 += d0;
+        r2 += d1;
+        r3 += d2;
+        r4 += d3;
+        r5 += d4;
+        r6 += d5;
+        r7 += d6;
+        r8 += d7;
+        r9 += d8;
+        r10 += d9;
+        r11 += d10;
+        r12 += d11;
+        r13 += d12;
+        r14 += d13;
+        r15 += d14;
+        r16 += d15;
+    }
+#else
+    return generic::FP32ComputeL2SqrBatch16(query,
+                                            dim,
+                                            c1,
+                                            c2,
+                                            c3,
+                                            c4,
+                                            c5,
+                                            c6,
+                                            c7,
+                                            c8,
+                                            c9,
+                                            c10,
+                                            c11,
+                                            c12,
+                                            c13,
+                                            c14,
+                                            c15,
+                                            c16,
+                                            r1,
+                                            r2,
+                                            r3,
+                                            r4,
+                                            r5,
+                                            r6,
+                                            r7,
+                                            r8,
+                                            r9,
+                                            r10,
+                                            r11,
+                                            r12,
+                                            r13,
+                                            r14,
+                                            r15,
+                                            r16);
+#endif
+}
+
+void
 FP32Sub(const float* x, const float* y, float* z, uint64_t dim) {
 #if defined(ENABLE_NEON)
     simd::BinaryOpImpl<simd::SimdTraits<simd::NEON_Tag>, simd::BinaryOp::Sub>(
