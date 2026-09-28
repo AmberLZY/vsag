@@ -122,6 +122,9 @@ public:
     Move(InnerIdType from, InnerIdType to) override;
 
     void
+    PermuteEntries(const Vector<InnerIdType>& perm) override;
+
+    void
     ShrinkToFit(InnerIdType capacity) override {
         this->layout_->Shrink(capacity);
         this->max_capacity_ = capacity;
@@ -571,6 +574,27 @@ template <typename QuantTmpl, typename LayoutTmpl>
 void
 FlattenDataCell<QuantTmpl, LayoutTmpl>::Move(InnerIdType from, InnerIdType to) {
     this->layout_->Move(from, to);
+}
+
+template <typename QuantTmpl, typename IOTmpl>
+void
+FlattenDataCell<QuantTmpl, IOTmpl>::PermuteEntries(const Vector<InnerIdType>& perm) {
+    const uint64_t total_count = this->total_count_;
+    if (perm.size() < total_count) {
+        throw VsagException(ErrorType::INTERNAL_ERROR,
+                            "flatten perm size is smaller than total count");
+    }
+    if (total_count == 0 || this->code_size_ == 0) {
+        return;
+    }
+
+    ByteBuffer new_codes(total_count * static_cast<uint64_t>(this->code_size_), allocator_);
+    for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+        const auto old_id = perm[new_id];
+        auto* dst = new_codes.data + static_cast<uint64_t>(new_id) * this->code_size_;
+        this->GetCodesById(old_id, dst);
+    }
+    this->layout_->WriteRange(0, new_codes.data, static_cast<InnerIdType>(total_count));
 }
 
 }  // namespace vsag

@@ -92,6 +92,9 @@ public:
     Move(InnerIdType from, InnerIdType to) override;
 
     void
+    PermuteEntries(const Vector<InnerIdType>& perm, const Vector<InnerIdType>& imap) override;
+
+    void
     ShrinkToFit(InnerIdType capacity) override {
     }
 

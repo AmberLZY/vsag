@@ -605,6 +605,13 @@ public:
     }
 
     virtual void
+    PermuteEntries(const Vector<InnerIdType>& perm) {
+        (void)perm;
+        throw VsagException(ErrorType::INTERNAL_ERROR,
+                            "PermuteEntries not implemented in FlattenInterface");
+    }
+
+    virtual void
     ShrinkToFit(InnerIdType capacity) {
     }
 

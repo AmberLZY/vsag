@@ -108,6 +108,14 @@ public:
     }
 
     virtual void
+    PermuteEntries(const Vector<InnerIdType>& perm, const Vector<InnerIdType>& imap) {
+        (void)perm;
+        (void)imap;
+        throw VsagException(ErrorType::INTERNAL_ERROR,
+                            "PermuteEntries not implemented in GraphInterface");
+    }
+
+    virtual void
     ShrinkToFit(InnerIdType capacity) {
     }
 

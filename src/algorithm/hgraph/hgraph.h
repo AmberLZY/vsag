@@ -800,6 +800,14 @@ private:
                               const IndexCommonParam& common_param,
                               bool is_create_new = true);
 
+    /// Reorder inner ids and backing storage once after deserialize.
+    void
+    maybe_permute_after_load();
+
+    /// Build a BFS-like permutation from current graph structure.
+    void
+    build_load_permutation(Vector<InnerIdType>& perm, Vector<InnerIdType>& imap) const;
+
     /// Initialize reorder if enabled.
     void
     init_resize_bit_and_reorder();

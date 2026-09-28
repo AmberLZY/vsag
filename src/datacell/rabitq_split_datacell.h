@@ -2518,6 +2518,50 @@ public:
     }
 
     void
+    PermuteEntries(const Vector<InnerIdType>& perm) override {
+        if (this->fused_code_storage_ != nullptr) {
+            throw VsagException(ErrorType::UNSUPPORTED_INDEX_OPERATION,
+                                "fused RaBitQ code storage does not support PermuteEntries");
+        }
+        const uint64_t total_count = this->total_count_;
+        if (total_count == 0 || this->code_size_ == 0) {
+            return;
+        }
+        if (perm.size() < total_count) {
+            throw VsagException(ErrorType::INTERNAL_ERROR,
+                                "rabitq split perm size is smaller than total count");
+        }
+        if (this->one_bit_code_size_ > 0) {
+            ByteBuffer new_one_bit(total_count * this->one_bit_code_size_, allocator_);
+            for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+                this->x_bit_layout_->Read(
+                    perm[new_id],
+                    new_one_bit.data + static_cast<uint64_t>(new_id) * this->one_bit_code_size_);
+            }
+            for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+                this->x_bit_layout_->Write(
+                    new_id,
+                    new_one_bit.data + static_cast<uint64_t>(new_id) * this->one_bit_code_size_);
+            }
+        }
+        if (this->supplement_code_size_ > 0) {
+            ByteBuffer new_supplement(total_count * this->supplement_code_size_, allocator_);
+            for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+                this->supplement_layout_->Read(
+                    perm[new_id],
+                    new_supplement.data +
+                        static_cast<uint64_t>(new_id) * this->supplement_code_size_);
+            }
+            for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+                this->supplement_layout_->Write(
+                    new_id,
+                    new_supplement.data +
+                        static_cast<uint64_t>(new_id) * this->supplement_code_size_);
+            }
+        }
+    }
+
+    void
     ShrinkToFit(InnerIdType capacity) override {
         if (this->fused_code_storage_ != nullptr) {
             throw VsagException(ErrorType::UNSUPPORTED_INDEX_OPERATION,

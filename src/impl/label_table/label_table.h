@@ -21,6 +21,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <tuple>
 
@@ -481,6 +482,54 @@ public:
         if (use_reverse_map_) {
             label_remap_.InsertOrAssign(label_table_[to], to);
         }
+    }
+
+    void
+    PermuteEntries(const Vector<InnerIdType>& perm, const Vector<InnerIdType>& imap) {
+        const uint64_t active_count = perm.size();
+        if (imap.size() < active_count || label_table_.size() < active_count) {
+            throw VsagException(ErrorType::INTERNAL_ERROR,
+                                "label perm size is smaller than total count");
+        }
+
+        Vector<LabelType> new_label_table(label_table_.size(), LabelType{}, allocator_);
+        for (InnerIdType new_id = 0; new_id < active_count; ++new_id) {
+            new_label_table[new_id] = label_table_[perm[new_id]];
+        }
+        label_table_.swap(new_label_table);
+
+        if (!source_id_table_.empty()) {
+            Vector<std::string> new_source_id_table(allocator_);
+            new_source_id_table.resize(source_id_table_.size());
+            for (InnerIdType new_id = 0; new_id < source_id_table_.size() && new_id < active_count;
+                 ++new_id) {
+                const auto old_id = perm[new_id];
+                if (old_id < source_id_table_.size()) {
+                    new_source_id_table[new_id] = std::move(source_id_table_[old_id]);
+                }
+            }
+            source_id_table_.swap(new_source_id_table);
+        }
+
+        {
+            std::scoped_lock wlock(delete_ids_mutex_);
+            UnorderedSet<InnerIdType> new_deleted_ids(allocator_);
+            for (const auto old_id : deleted_ids_) {
+                if (old_id < imap.size()) {
+                    new_deleted_ids.insert(imap[old_id]);
+                }
+            }
+            deleted_ids_.swap(new_deleted_ids);
+        }
+
+        if (use_reverse_map_) {
+            label_remap_.Clear();
+            label_remap_.Reserve(active_count);
+            for (InnerIdType id = 0; id < active_count; ++id) {
+                label_remap_.InsertOrAssign(label_table_[id], id);
+            }
+        }
+        total_count_.store(static_cast<int64_t>(active_count));
     }
 
     void

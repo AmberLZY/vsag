@@ -1301,6 +1301,7 @@ HGraph::finish_deserialize() {
         }
     }
     this->restore_fused_codec();
+    maybe_permute_after_load();
 
     // post serialize procedure
     if (use_elp_optimizer_) {
@@ -1333,6 +1334,128 @@ HGraph::restore_fused_codec() {
         return;
     }
     rabitq_split_codes_->ImportFusedCodec(rabitq_fused_datacell_->CodecModel());
+}
+
+void
+HGraph::build_load_permutation(Vector<InnerIdType>& perm, Vector<InnerIdType>& imap) const {
+    const auto total_count = static_cast<InnerIdType>(this->total_count_.load());
+    perm.clear();
+    imap.clear();
+    perm.reserve(total_count);
+    imap.resize(total_count, std::numeric_limits<InnerIdType>::max());
+
+    Vector<uint8_t> visited(total_count, uint8_t{0}, allocator_);
+    Vector<InnerIdType> queue(allocator_);
+    queue.reserve(total_count);
+
+    auto push_if_unvisited = [&](InnerIdType id) {
+        if (id >= total_count || visited[id] != 0) {
+            return;
+        }
+        visited[id] = 1;
+        queue.push_back(id);
+    };
+
+    if (this->entry_point_id_ < total_count) {
+        push_if_unvisited(this->entry_point_id_);
+    }
+    for (const auto& graph : this->route_graphs_) {
+        if (graph == nullptr) {
+            continue;
+        }
+        const auto ids = graph->GetIds();
+        Vector<InnerIdType> sorted_ids(ids.begin(), ids.end(), allocator_);
+        std::sort(sorted_ids.begin(), sorted_ids.end());
+        for (const auto id : sorted_ids) {
+            push_if_unvisited(id);
+        }
+    }
+
+    Vector<InnerIdType> neighbors(allocator_);
+    for (uint64_t head = 0; head < queue.size(); ++head) {
+        const auto id = queue[head];
+        perm.push_back(id);
+        this->bottom_graph_->GetNeighbors(id, neighbors);
+        for (const auto nb : neighbors) {
+            push_if_unvisited(nb);
+        }
+    }
+
+    for (InnerIdType id = 0; id < total_count; ++id) {
+        if (visited[id] == 0) {
+            perm.push_back(id);
+        }
+    }
+
+    for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+        imap[perm[new_id]] = new_id;
+    }
+}
+
+void
+HGraph::maybe_permute_after_load() {
+    if (this->support_force_remove() || this->delete_count_.load(std::memory_order_acquire) != 0) {
+        return;
+    }
+    if (this->support_duplicate_) {
+        return;
+    }
+    // Fused RaBitQ storage interleaves graph nodes with codes; the companion
+    // graphs below reference inner ids stored in their own slabs.
+    if (this->rabitq_fused_datacell_ != nullptr || this->conjugate_graph_ != nullptr ||
+        this->mci_cliques_ != nullptr) {
+        return;
+    }
+    if (this->use_attribute_filter_ || this->attr_filter_index_ != nullptr) {
+        return;
+    }
+    if (this->extra_info_size_ > 0 && this->extra_infos_ != nullptr) {
+        return;
+    }
+    if (this->create_new_raw_vector_ && this->raw_vector_ != nullptr) {
+        return;
+    }
+    if (this->basic_flatten_codes_ == nullptr || this->bottom_graph_ == nullptr ||
+        this->label_table_ == nullptr) {
+        return;
+    }
+    const auto total_count = this->basic_flatten_codes_->TotalCount();
+    if (total_count == 0) {
+        return;
+    }
+    if (this->bottom_graph_->TotalCount() != total_count ||
+        static_cast<uint64_t>(this->label_table_->GetTotalCount()) != total_count) {
+        return;
+    }
+
+    Vector<InnerIdType> perm(allocator_);
+    Vector<InnerIdType> imap(allocator_);
+    build_load_permutation(perm, imap);
+
+    bool identity = true;
+    for (InnerIdType i = 0; i < perm.size(); ++i) {
+        if (perm[i] != i) {
+            identity = false;
+            break;
+        }
+    }
+    if (identity) {
+        return;
+    }
+
+    std::scoped_lock<std::shared_mutex> wlock(this->global_mutex_);
+    this->basic_flatten_codes_->PermuteEntries(perm);
+    if (has_precise_reorder()) {
+        this->high_precise_codes_->PermuteEntries(perm);
+    }
+    this->bottom_graph_->PermuteEntries(perm, imap);
+    for (auto& route_graph : this->route_graphs_) {
+        route_graph->PermuteEntries(perm, imap);
+    }
+    this->label_table_->PermuteEntries(perm, imap);
+    if (this->entry_point_id_ < imap.size()) {
+        this->entry_point_id_ = imap[this->entry_point_id_];
+    }
 }
 
 std::unordered_map<std::string, uint64_t>

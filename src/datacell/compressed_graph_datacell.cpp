@@ -15,6 +15,8 @@
 
 #include "compressed_graph_datacell.h"
 
+#include <algorithm>
+
 #include "graph_datacell_parameter.h"
 #include "index_common_param.h"
 #include "vsag_exception.h"
@@ -183,6 +185,46 @@ CompressedGraphDataCell::GetIds() const {
         }
     }
     return ids;
+}
+
+void
+CompressedGraphDataCell::PermuteEntries(const Vector<InnerIdType>& perm,
+                                        const Vector<InnerIdType>& imap) {
+    const uint64_t total_count = this->total_count_;
+    if (perm.size() < total_count || imap.size() < total_count) {
+        throw VsagException(ErrorType::INTERNAL_ERROR,
+                            "compressed graph perm size is smaller than total count");
+    }
+
+    Vector<std::unique_ptr<EliasFanoEncoder>> new_neighbor_sets(allocator_);
+    new_neighbor_sets.resize(neighbor_sets_.size());
+    Vector<InnerIdType> neighbors(allocator_);
+    Vector<InnerIdType> mapped(allocator_);
+    for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+        const auto old_id = perm[new_id];
+        neighbors.clear();
+        mapped.clear();
+        if (old_id < neighbor_sets_.size() && neighbor_sets_[old_id] != nullptr) {
+            neighbor_sets_[old_id]->DecompressAll(neighbors);
+            mapped.reserve(neighbors.size());
+            for (const auto old_neighbor : neighbors) {
+                if (old_neighbor < imap.size()) {
+                    mapped.emplace_back(imap[old_neighbor]);
+                }
+            }
+            std::sort(mapped.begin(), mapped.end());
+            auto encoder = std::make_unique<EliasFanoEncoder>();
+            encoder->Encode(mapped, this->max_capacity_, allocator_);
+            new_neighbor_sets[new_id] = std::move(encoder);
+        }
+    }
+
+    for (auto& encoder : neighbor_sets_) {
+        if (encoder) {
+            encoder->Clear(allocator_);
+        }
+    }
+    neighbor_sets_.swap(new_neighbor_sets);
 }
 
 }  // namespace vsag

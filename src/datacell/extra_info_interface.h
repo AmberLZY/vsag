@@ -24,6 +24,7 @@
 #include "storage/stream_writer.h"
 #include "typing.h"
 #include "utils/pointer_define.h"
+#include "vsag_exception.h"
 
 namespace vsag {
 DEFINE_POINTER(ExtraInfoInterface);
@@ -163,6 +164,13 @@ public:
     Move(InnerIdType from, InnerIdType to) {
         throw VsagException(ErrorType::INTERNAL_ERROR,
                             "Move not implemented in ExtraInfoInterface");
+    }
+
+    virtual void
+    PermuteEntries(const Vector<InnerIdType>& perm) {
+        (void)perm;
+        throw VsagException(ErrorType::INTERNAL_ERROR,
+                            "PermuteEntries not implemented in ExtraInfoInterface");
     }
 
     virtual void

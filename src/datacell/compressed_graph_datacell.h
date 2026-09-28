@@ -66,6 +66,9 @@ public:
     Vector<InnerIdType>
     GetIds() const override;
 
+    void
+    PermuteEntries(const Vector<InnerIdType>& perm, const Vector<InnerIdType>& imap) override;
+
     DuplicateTrackerPtr
     CreateDuplicateTracker() override {
         return std::make_shared<SparseDuplicateTracker>(allocator_);

@@ -21,6 +21,7 @@
 
 #include "extra_info_interface.h"
 #include "layout/fixed_layout.h"
+#include "utils/byte_buffer.h"
 
 namespace vsag {
 /*
@@ -82,6 +83,9 @@ public:
 
     void
     Move(InnerIdType from, InnerIdType to) override;
+
+    void
+    PermuteEntries(const Vector<InnerIdType>& perm) override;
 
     void
     ShrinkToFit(InnerIdType capacity) override {
@@ -183,5 +187,25 @@ template <typename LayoutTmpl>
 void
 ExtraInfoDataCell<LayoutTmpl>::Move(InnerIdType from, InnerIdType to) {
     this->layout_->Move(from, to);
+}
+
+template <typename IOTmpl>
+void
+ExtraInfoDataCell<IOTmpl>::PermuteEntries(const Vector<InnerIdType>& perm) {
+    const uint64_t total_count = this->total_count_;
+    if (perm.size() < total_count) {
+        throw VsagException(ErrorType::INTERNAL_ERROR,
+                            "extra info perm size is smaller than total count");
+    }
+    if (total_count == 0 || this->extra_info_size_ == 0) {
+        return;
+    }
+
+    ByteBuffer new_infos(total_count * this->extra_info_size_, allocator_);
+    for (InnerIdType new_id = 0; new_id < total_count; ++new_id) {
+        auto* dst = new_infos.data + static_cast<uint64_t>(new_id) * this->extra_info_size_;
+        this->GetExtraInfoById(perm[new_id], reinterpret_cast<char*>(dst));
+    }
+    this->layout_->WriteRange(0, new_infos.data, static_cast<InnerIdType>(total_count));
 }
 }  // namespace vsag
